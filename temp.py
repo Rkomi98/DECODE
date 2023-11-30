@@ -8,7 +8,6 @@ from dash.dependencies import Input, Output
 from plotly import graph_objs as go
 from plotly.graph_objs import *
 from datetime import datetime as dt
-from dash import html
 
 app = dash.Dash(
     __name__, meta_tags=[{"name": "viewport", "content": "width=device-width"}],
@@ -60,12 +59,12 @@ for month in df.groupby(df.index.month):
 totalList = np.array(totalList)
 
 #HTML
-
+'''
 @app.route('/')
 def home():
     return render_template('index.html')
 
-'''
+
 external_html = "index.html"
 with open(f"{external_html}", "r") as file:
 #with open(f"{server.config['TEMPLATE_FOLDER']}/{external_html}", "r") as file:
@@ -80,9 +79,6 @@ app.layout = html.Div(
 
 app.layout = html.Div(
     children=[
-        # Add the stylesheet link
-        html.Link(rel="stylesheet", href="assets/style.css"),
-        html.Link(rel="stylesheet", href="assets/base.css"),
         
         html.Div(
             className="row",
@@ -94,7 +90,7 @@ app.layout = html.Div(
                         html.A(
                             html.Img(
                                 className="logo",
-                                src=app.get_asset_url("https://github.com/Rkomi98/DECODE/blob/main/static/DECODE_logo.png?raw=true"),
+                                src="https://github.com/Rkomi98/DECODE/blob/main/static/DECODE_logo.png?raw=true",
                             ),
                             href="https://plotly.com/dash/",
                         ),
