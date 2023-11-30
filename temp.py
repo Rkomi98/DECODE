@@ -61,6 +61,10 @@ totalList = np.array(totalList)
 # Layout of Dash App
 app.layout = html.Div(
     children=[
+        # Add the stylesheet link
+        html.Link(rel="stylesheet", href="assets/style.css"),
+        html.Link(rel="stylesheet", href="assets/base.css"),
+        
         html.Div(
             className="row",
             children=[
