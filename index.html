@@ -1,3 +1,63 @@
 <!-- Header -->
 
-<h1>My First Website</h1>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="assets/base.css">
+    <link rel="stylesheet" href="assets/style.css">
+    <title>DASH - UBER DATA APP</title>
+</head>
+<body>
+    <div class="row">
+        <!-- Column for user controls -->           
+        <div class="four columns div-user-controls">
+            <a href="https://plotly.com/dash/">
+                <img class="logo" src="{{ url_for('static', filename='dash-logo-new.png') }}">
+            </a>
+            <h2>DASH - UBER DATA APP</h2>
+            <p>Select different days using the date picker or by selecting different time frames on the histogram.</p>
+            <div class="div-for-dropdown">
+                <input type="date" id="date-picker" name="date-picker" min="2014-04-01" max="2014-09-30" value="2014-04-01">
+            </div>
+            <div class="row">
+                <div class="div-for-dropdown">
+                    <select id="location-dropdown">
+                        <option value="" disabled selected>Select a location</option>
+                        {% for location in list_of_locations %}
+                            <option value="{{ location }}">{{ location }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="div-for-dropdown">
+                    <select id="bar-selector" multiple>
+                        {% for n in range(24) %}
+                            <option value="{{ n }}">{{ n }}:00</option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+            <p id="total-rides"></p>
+            <p id="total-rides-selection"></p>
+            <p id="date-value"></p>
+            <p>
+                Source: <a href="https://github.com/fivethirtyeight/uber-tlc-foil-response/tree/master/uber-trip-data" target="_blank">FiveThirtyEight</a>
+            </p>
+            <p>
+                Links: 
+                <a href="https://github.com/plotly/dash-sample-apps/tree/main/apps/dash-uber-rides-demo" target="_blank">Source Code</a> | 
+                <a href="https://plotly.com/get-demo/" target="_blank">Enterprise Demo</a>
+            </p>
+        </div>
+        <!-- Column for app graphs and plots -->
+        <div class="eight columns div-for-charts bg-grey">
+            <div id="map-graph"></div>
+            <div class="text-padding">
+                <p>Select any of the bars on the histogram to section data by time.</p>
+            </div>
+            <div id="histogram"></div>
+        </div>
+    </div>
+</body>
+</html>
