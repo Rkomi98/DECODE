@@ -8,6 +8,7 @@ from dash.dependencies import Input, Output
 from plotly import graph_objs as go
 from plotly.graph_objs import *
 from datetime import datetime as dt
+from dash import html
 
 app = dash.Dash(
     __name__, meta_tags=[{"name": "viewport", "content": "width=device-width"}],
@@ -58,7 +59,25 @@ for month in df.groupby(df.index.month):
     totalList.append(dailyList)
 totalList = np.array(totalList)
 
-# Layout of Dash App
+#HTML
+
+@app.route('/')
+def home():
+    return render_template('index.html')
+
+'''
+external_html = "index.html"
+with open(f"{external_html}", "r") as file:
+#with open(f"{server.config['TEMPLATE_FOLDER']}/{external_html}", "r") as file:
+    external_html_content = file.read()
+
+app.layout = html.Div(
+    children=[
+        dcc.Markdown(external_html_content),
+    ]
+)
+'''
+
 app.layout = html.Div(
     children=[
         # Add the stylesheet link
@@ -75,7 +94,7 @@ app.layout = html.Div(
                         html.A(
                             html.Img(
                                 className="logo",
-                                src=app.get_asset_url("dash-logo-new.png"),
+                                src=app.get_asset_url("https://github.com/Rkomi98/DECODE/blob/main/static/DECODE_logo.png?raw=true"),
                             ),
                             href="https://plotly.com/dash/",
                         ),
@@ -142,7 +161,6 @@ app.layout = html.Div(
                         dcc.Markdown(
                             """
                             Source: [FiveThirtyEight](https://github.com/fivethirtyeight/uber-tlc-foil-response/tree/master/uber-trip-data)
-
                             Links: [Source Code](https://github.com/plotly/dash-sample-apps/tree/main/apps/dash-uber-rides-demo) | [Enterprise Demo](https://plotly.com/get-demo/)
                             """
                         ),
