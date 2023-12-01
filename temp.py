@@ -22,7 +22,7 @@ server = app.server
 mapbox_access_token = "pk.eyJ1IjoicGxvdGx5bWFwYm94IiwiYSI6ImNrOWJqb2F4djBnMjEzbG50amg0dnJieG4ifQ.Zme1-Uzoi75IaFbieBDl3A"
 
 
-# Dictionary of important locations in New York
+# Dictionary of flooded areas in Italy
 list_of_locations = {
     "Madison Square Garden": {"lat": 40.7505, "lon": -73.9934},
     "Yankee Stadium": {"lat": 40.8296, "lon": -73.9262},
