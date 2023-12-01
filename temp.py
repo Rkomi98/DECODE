@@ -1,9 +1,11 @@
 import dash
-import dash_core_components as dcc
-import dash_html_components as html
+#import dash_core_components as dcc
+#import dash_html_components as html
 import pandas as pd
 import numpy as np
 
+from dash import html
+from dash import dcc
 from dash.dependencies import Input, Output
 from plotly import graph_objs as go
 from plotly.graph_objs import *
@@ -56,7 +58,7 @@ for month in df.groupby(df.index.month):
     for day in month[1].groupby(month[1].index.day):
         dailyList.append(day[1])
     totalList.append(dailyList)
-totalList = np.array(totalList)
+#totalList = np.array(totalList)
 
 #HTML
 '''
@@ -523,4 +525,4 @@ def update_graph(datePicked, selectedData, selectedLocation):
 
 
 if __name__ == "__main__":
-    app.run_server(debug=True)
+    app.run_server(debug=False)
