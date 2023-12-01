@@ -1,8 +1,7 @@
 import dash
-#import dash_core_components as dcc
-#import dash_html_components as html
 import pandas as pd
 import numpy as np
+import plotly.express as px1
 
 from dash import html
 from dash import dcc
@@ -10,6 +9,7 @@ from dash.dependencies import Input, Output
 from plotly import graph_objs as go
 from plotly.graph_objs import *
 from datetime import datetime as dt
+
 
 app = dash.Dash(
     __name__, meta_tags=[{"name": "viewport", "content": "width=device-width"}],
@@ -60,6 +60,29 @@ for month in df.groupby(df.index.month):
     totalList.append(dailyList)
 #totalList = np.array(totalList)
 
+## Sample data by PM
+data = {
+    'lat': [43.6545, 43.7597, 43.6524],
+    'lon': [10.5547, 11.0463, 10.5353],
+    'name': ['Location 1', 'Location 2', 'Location 3']
+}
+# OpenStreetMap layout
+layout = dict(
+    autosize=True,
+    hovermode='closest',
+    mapbox=dict(
+        layers=[],
+        accesstoken='your-mapbox-access-token',  # Replace with your Mapbox access token
+        bearing=0,
+        center=dict(
+            lat=43.77109369,
+            lon=11.24879527
+        ),
+        pitch=0,
+        zoom=10
+    ),
+)
+
 #HTML
 '''
 @app.route('/')
@@ -96,7 +119,7 @@ app.layout = html.Div(
                             ),
                             href="https://plotly.com/dash/",
                         ),
-                        html.H2("DASH - UBER DATA APP"),
+                        html.H2("DECODE - Damage Evaluation with Comprehensive Observation Data on Earth"),
                         html.P(
                             """Select different days using the date picker or by selecting
                             different time frames on the histogram."""
@@ -168,7 +191,17 @@ app.layout = html.Div(
                 html.Div(
                     className="eight columns div-for-charts bg-grey",
                     children=[
-                        dcc.Graph(id="map-graph"),
+                        #dcc.Graph(id="map-graph"),
+                        dcc.Graph(
+                            id='map-graph',
+                            figure=px.scatter_mapbox(
+                                data_frame=data,
+                                lat='lat',
+                                lon='lon',
+                                text='name',
+                                mapbox_style='carto-darkmatter',  # Use OpenStreetMap as the base map
+                            ).update_layout(layout)
+                        ),                        
                         html.Div(
                             className="text-padding",
                             children=[
