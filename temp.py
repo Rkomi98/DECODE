@@ -49,9 +49,9 @@ df3 = pd.read_csv(
     dtype=object,
 )
 df = pd.concat([df1, df2, df3], axis=0)
-df["Date/Time"] = pd.to_datetime(df["Date/Time"], format="%Y-%m-%d %H:%M")
+df["Date/Time"] = pd.to_datetime(df["Date/Time"], format="%Y-%m-%d %H:%M:%S")
 df.index = df["Date/Time"]
-df.drop("Date/Time", 1, inplace=True)
+#df.drop("Date/Time", axis = 1, inplace=True)
 totalList = []
 for month in df.groupby(df.index.month):
     dailyList = []
