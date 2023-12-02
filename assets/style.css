@@ -44,8 +44,15 @@ a {
 #map-graph {
   flex-grow: 1 
 }
-.mapboxgl-canvas, .mapboxgl-map {
+.mapboxgl-canvas {
   min-width: 100%;
+}
+.mapboxgl-map {
+  position: absolute;
+  width: 1000px;
+  height: 310px;
+  left: 0px;
+  top: 0px;
 }
 /* Graph Control Objects ––––––––––––––––––––––––––––––––––––––––––––––––––*/
 .div-user-controls {

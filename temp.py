@@ -1,7 +1,7 @@
 import dash
 import pandas as pd
 import numpy as np
-import plotly.express as px1
+import plotly.express as px
 
 from dash import html
 from dash import dcc
@@ -190,44 +190,47 @@ app.layout = html.Div(
                 # Column for app graphs and plots
                 html.Div(
                     className="eight columns div-for-charts bg-grey",
+                    #className="mapboxgl-map",
                     children=[
-                        #dcc.Graph(id="map-graph"),
-                        dcc.Graph(
-                            id='map',
-                            figure=px.scatter_mapbox(
-                                color_continuous_scale = [
-                                    "#F4EC15",
-                                    "#DAF017",
-                                    "#BBEC19",
-                                    "#9DE81B",
-                                    "#80E41D",
-                                    "#66E01F",
-                                    "#4CDC20",
-                                    "#34D822",
-                                    "#24D249",
-                                    "#25D042",
-                                    "#26CC58",
-                                    "#28C86D",
-                                    "#29C481",
-                                    "#2AC093",
-                                    "#2BBCA4",
-                                    "#2BB5B8",
-                                    "#2C99B4",
-                                    "#2D7EB0",
-                                    "#2D65AC",
-                                    "#2E4EA4",
-                                    "#2E38A4",
-                                    "#3B2FA0",
-                                    "#4E2F9C",
-                                    "#603099",
-                                ],
-                                data_frame=data,
-                                lat='lat',
-                                lon='lon',
-                                text='name',
-                                mapbox_style='carto-darkmatter',  # Use OpenStreetMap as the base map
-                            ).update_layout(layout)
-                        ),                        
+                        html.Div(
+                            #dcc.Graph(id="map-graph"),
+                            dcc.Graph(
+                                id='map',
+                                figure=px.scatter_mapbox(
+                                    color_continuous_scale = [
+                                        "#F4EC15",
+                                        "#DAF017",
+                                        "#BBEC19",
+                                        "#9DE81B",
+                                        "#80E41D",
+                                        "#66E01F",
+                                        "#4CDC20",
+                                        "#34D822",
+                                        "#24D249",
+                                        "#25D042",
+                                        "#26CC58",
+                                        "#28C86D",
+                                        "#29C481",
+                                        "#2AC093",
+                                        "#2BBCA4",
+                                        "#2BB5B8",
+                                        "#2C99B4",
+                                        "#2D7EB0",
+                                        "#2D65AC",
+                                        "#2E4EA4",
+                                        "#2E38A4",
+                                        "#3B2FA0",
+                                        "#4E2F9C",
+                                        "#603099",
+                                    ],
+                                    data_frame=data,
+                                    lat='lat',
+                                    lon='lon',
+                                    text='name',
+                                    mapbox_style='carto-darkmatter',  # Use OpenStreetMap as the base map
+                                ).update_layout(layout)
+                            ) 
+                        ),
                         html.Div(
                             className="text-padding",
                             children=[
