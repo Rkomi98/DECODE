@@ -1,10 +1,15 @@
+import json
 import dash
 import pandas as pd
 import numpy as np
 import plotly.express as px
+import geopandas as gpd
 
 from dash import html
 from dash import dcc
+from dash import callback
+from dash import State
+from dash.exceptions import PreventUpdate
 from dash.dependencies import Input, Output
 from plotly import graph_objs as go
 from plotly.graph_objs import *
@@ -175,6 +180,20 @@ app.layout = html.Div(
                                         )
                                     ],
                                 ),
+                                html.Div(
+                                    dcc.Upload(
+                                        id='upload-json',
+                                        children=html.Button('Upload JSON File'),
+                                        multiple=False
+                                    ),
+                                    
+                                    # File upload for GPKG
+                                    dcc.Upload(
+                                        id='upload-gpkg',
+                                        children=html.Button('Upload GPKG File'),
+                                        multiple=False
+                                    ),
+                                )
                             ],
                         ),
                         html.P(id="total-rides"),
@@ -228,7 +247,7 @@ app.layout = html.Div(
                                     lat='lat',
                                     lon='lon',
                                     text='name',
-                                    mapbox_style="dark-matter",  # Use OpenStreetMap as the base map
+                                    mapbox_style='carto-darkmatter',  # Use OpenStreetMap as the base map
                                 ).update_layout(layout)
                             ) 
                         ),
@@ -459,6 +478,25 @@ def getLatLonColor(selectedData, month, day):
         else:
             listStr += "(totalList[month][day].index.hour==" + str(int(time)) + ")]"
     return eval(listStr)
+
+def read_json(contents):
+    content_type, content_string = contents.split(',')
+    decoded = content_string.encode('utf-8')
+    return json.loads(decoded)
+
+def read_gpkg(contents):
+    content_type, content_string = contents.split(',')
+    decoded = content_string.encode('utf-8')
+    gdf = gpd.read_file(decoded, driver='GPKG')
+    return gdf
+
+@app.callback(
+    Output('map', 'figure'),
+    [Input('upload-json', 'contents'),
+     Input('upload-gpkg', 'contents')],
+    [State('upload-json', 'filename'),
+     State('upload-gpkg', 'filename')]
+)
 
 
 # Update Map Graph based on date-picker, selected data on histogram and location dropdown
