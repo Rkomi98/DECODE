@@ -69,6 +69,7 @@ data = {
 # OpenStreetMap layout
 layout = dict(
     autosize=True,
+    margin=go.layout.Margin(l=0, r=0, t=0, b=0),
     hovermode='closest',
     mapbox=dict(
         layers=[],
@@ -227,7 +228,7 @@ app.layout = html.Div(
                                     lat='lat',
                                     lon='lon',
                                     text='name',
-                                    mapbox_style='carto-darkmatter',  # Use OpenStreetMap as the base map
+                                    mapbox_style="dark-matter",  # Use OpenStreetMap as the base map
                                 ).update_layout(layout)
                             ) 
                         ),
@@ -540,7 +541,7 @@ def update_graph(datePicked, selectedData, selectedLocation):
         ],
         layout=Layout(
             autosize=True,
-            margin=go.layout.Margin(l=0, r=35, t=0, b=0),
+            margin=go.layout.Margin(l=0, r=0, t=0, b=0),
             showlegend=False,
             mapbox=dict(
                 accesstoken=mapbox_access_token,
