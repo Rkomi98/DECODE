@@ -181,18 +181,20 @@ app.layout = html.Div(
                                     ],
                                 ),
                                 html.Div(
-                                    dcc.Upload(
-                                        id='upload-json',
-                                        children=html.Button('Upload JSON File'),
-                                        multiple=False
-                                    ),
-                                    
-                                    # File upload for GPKG
-                                    dcc.Upload(
-                                        id='upload-gpkg',
-                                        children=html.Button('Upload GPKG File'),
-                                        multiple=False
-                                    ),
+                                    children=[
+                                        dcc.Upload(
+                                            id='upload-json',
+                                            children=html.Button('Upload JSON File'),
+                                            multiple=False
+                                        ),
+                                        
+                                        # File upload for GPKG
+                                        dcc.Upload(
+                                            id='upload-gpkg',
+                                            children=html.Button('Upload GPKG File'),
+                                            multiple=False
+                                        ),
+                                    ]
                                 )
                             ],
                         ),
