@@ -253,6 +253,12 @@ Taken from https://codepen.io/chriddyp/pen/bWLwgP.css
     background-color: #1EAEDB;
     border-color: #1EAEDB;
   }
+  .button-container {
+    display: flex;
+    justify-content: space-between;
+    padding-top: 12px;
+    padding-bottom: 12px;
+  }
   /* Forms –––––––––––––––––––––––––––––––––––––––––––––––––– */
   input[type="email"], input[type="number"], input[type="search"], input[type="text"], input[type="tel"], input[type="url"], input[type="password"], textarea, select {
     height: 38px;

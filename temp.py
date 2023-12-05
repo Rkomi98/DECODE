@@ -181,6 +181,7 @@ app.layout = html.Div(
                                     ],
                                 ),
                                 html.Div(
+                                    className="button-container",
                                     children=[
                                         dcc.Upload(
                                             id='upload-json',
