@@ -6,6 +6,7 @@ import plotly.express as px
 import geopandas as gpd
 
 from dash import html
+from dash.html.Button import Button
 from dash import dcc
 from dash import callback
 from dash import State
@@ -186,14 +187,16 @@ app.layout = html.Div(
                                         dcc.Upload(
                                             id='upload-json',
                                             children=html.Button('Upload JSON File'),
-                                            multiple=False
+                                            multiple=False,
+                                            accept='.json',
                                         ),
                                         
                                         # File upload for GPKG
                                         dcc.Upload(
                                             id='upload-gpkg',
                                             children=html.Button('Upload GPKG File'),
-                                            multiple=False
+                                            multiple=True,
+                                            accept='.gpkg, csv, shp',  # Specify accepted file types
                                         ),
                                     ]
                                 )
@@ -485,7 +488,7 @@ def getLatLonColor(selectedData, month, day):
 def read_json(contents):
     content_type, content_string = contents.split(',')
     decoded = content_string.encode('utf-8')
-    return json.loads(decoded)
+    return json.safe_load(decoded)
 
 def read_gpkg(contents):
     content_type, content_string = contents.split(',')
@@ -500,6 +503,34 @@ def read_gpkg(contents):
     [State('upload-json', 'filename'),
      State('upload-gpkg', 'filename')]
 )
+def update_map(json_contents, gpkg_contents, json_filename, gpkg_filename):
+    if not json_contents and not gpkg_contents:
+        raise PreventUpdate
+
+    if json_contents:
+        data = read_json(json_contents)
+        # Process the json data as needed
+        # ...
+
+    if gpkg_contents:
+        data = read_gpkg(gpkg_contents)
+        # Process the GeoPackage data as needed
+        # ...
+
+    # Use the processed data to update the map
+    # For example, you can use Plotly Express to create a scatter map
+    fig = px.scatter_mapbox(
+        lat=data['lat'],
+        lon=data['lon'],
+        mapbox_style='open-street-map',
+    ).update_layout(
+        mapbox=dict(
+            center=dict(lat=data['lat'].mean(), lon=data['lon'].mean()),
+            zoom=12,
+        ),
+    )
+
+    return fig
 
 
 # Update Map Graph based on date-picker, selected data on histogram and location dropdown
