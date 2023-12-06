@@ -4,6 +4,7 @@ import pandas as pd
 import numpy as np
 import plotly.express as px
 import geopandas as gpd
+import shapely.geometry
 
 from dash import html
 from dash.html.Button import Button
@@ -15,6 +16,8 @@ from dash.dependencies import Input, Output
 from plotly import graph_objs as go
 from plotly.graph_objs import *
 from datetime import datetime as dt
+from shapely.geometry import Polygon
+
 
 
 app = dash.Dash(
@@ -30,15 +33,9 @@ mapbox_access_token = "pk.eyJ1IjoicGxvdGx5bWFwYm94IiwiYSI6ImNrOWJqb2F4djBnMjEzbG
 
 # Dictionary of flooded areas in Italy
 list_of_locations = {
-    "Madison Square Garden": {"lat": 40.7505, "lon": -73.9934},
-    "Yankee Stadium": {"lat": 40.8296, "lon": -73.9262},
-    "Empire State Building": {"lat": 40.7484, "lon": -73.9857},
-    "New York Stock Exchange": {"lat": 40.7069, "lon": -74.0113},
-    "JFK Airport": {"lat": 40.644987, "lon": -73.785607},
-    "Grand Central Station": {"lat": 40.7527, "lon": -73.9772},
-    "Times Square": {"lat": 40.7589, "lon": -73.9851},
-    "Columbia University": {"lat": 40.8075, "lon": -73.9626},
-    "United Nations HQ": {"lat": 40.7489, "lon": -73.9680},
+    "Alluvione a Prato": {"lat": 43.8777049, "lon": 11.102228},
+    "Alluvione in Emilia Romagna": {"lat": 44.2924, "lon": 11.8762},
+    "Bomba d'acqua a Milano": {"lat": 45.4654219, "lon": 9.1859243},
 }
 
 # Initialize data frame
@@ -72,6 +69,23 @@ data = {
     'lon': [10.5547, 11.0463, 10.5353],
     'name': ['Location 1', 'Location 2', 'Location 3']
 }
+# Coordinates for the polygon
+polygon_coordinates = [
+    [10.554735408915095, 43.654514997938946],
+    [10.554735408915098, 43.654514997938946],
+    [10.645351, 43.711531],
+    [10.715524, 43.672453],
+    [10.761927, 43.644037],
+    [10.53775, 43.500318],
+    [10.439732, 43.582154],
+    [10.46497, 43.598034],
+    [10.476443, 43.654242],
+    [10.554735408915095, 43.654514997938946]
+]
+polygon = shapely.geometry.Polygon(polygon_coordinates)
+# Create a GeoDataFrame
+gdf = gpd.GeoDataFrame(geometry=gpd.GeoSeries(polygon))
+
 # OpenStreetMap layout
 layout = dict(
     autosize=True,
@@ -263,7 +277,9 @@ app.layout = html.Div(
                                 "Select any of the bars on the histogram to section data by time."
                             ],
                         ),
-                        dcc.Graph(id="histogram"),
+                        #dcc.Graph(id="histogram"),
+                        # Display the uploaded data
+                        dcc.Graph(id="map_new"),
                     ],
                 ),
             ],
@@ -497,40 +513,89 @@ def read_gpkg(contents):
     return gdf
 
 @app.callback(
-    Output('map', 'figure'),
+    Output('map_new', 'figure'),
     [Input('upload-json', 'contents'),
      Input('upload-gpkg', 'contents')],
     [State('upload-json', 'filename'),
      State('upload-gpkg', 'filename')]
 )
+
 def update_map(json_contents, gpkg_contents, json_filename, gpkg_filename):
     if not json_contents and not gpkg_contents:
-        raise PreventUpdate
+        # Coordinates for the polygon
+        polygon_coordinates = [
+            [10.554735408915095, 43.654514997938946],
+            [10.554735408915098, 43.654514997938946],
+            [10.645351, 43.711531],
+            [10.715524, 43.672453],
+            [10.761927, 43.644037],
+            [10.53775, 43.500318],
+            [10.439732, 43.582154],
+            [10.46497, 43.598034],
+            [10.476443, 43.654242],
+            [10.554735408915095, 43.654514997938946]
+        ]
+        polygon = shapely.geometry.Polygon(polygon_coordinates)
+        # Create a GeoDataFrame
+        gdf = gpd.GeoDataFrame(geometry=gpd.GeoSeries(polygon))
+        # Plot polygons using GeoPandas
+        fig = px.choropleth_mapbox(
+            gdf,
+            geojson=gdf.geometry.__geo_interface__,
+            locations=gdf.index,
+            mapbox_style='carto-darkmatter',  # Use OpenStreetMap as the base map
+        )
+
+        fig.update_geos(fitbounds="locations", visible=False)
+
+        return fig
 
     if json_contents:
         data = read_json(json_contents)
-        # Process the json data as needed
-        # ...
+        features = data.get('features', [])
+
+        # Extract polygon coordinates
+        polygons = []
+        for feature in features:
+            geometry = feature.get('geometry', {})
+            if geometry.get('type') == 'Polygon':
+                coordinates = geometry.get('coordinates', [])
+                polygons.append(Polygon(coordinates[0]))
+
+        # Create a GeoDataFrame for GeoJSON-like plotting
+        gdf = gpd.GeoDataFrame(geometry=gpd.GeoSeries(polygons))
+
+        # Plot polygons using GeoPandas
+        fig = px.choropleth_mapbox(
+            gdf,
+            geojson=gdf.geometry.__geo_interface__,
+            locations=gdf.index,
+            mapbox_style='carto-darkmatter',  # Use OpenStreetMap as the base map
+        )
+
+        fig.update_geos(fitbounds="locations", visible=False)
+
+        return fig
 
     if gpkg_contents:
         data = read_gpkg(gpkg_contents)
         # Process the GeoPackage data as needed
         # ...
 
-    # Use the processed data to update the map
-    # For example, you can use Plotly Express to create a scatter map
-    fig = px.scatter_mapbox(
-        lat=data['lat'],
-        lon=data['lon'],
-        mapbox_style='open-street-map',
-    ).update_layout(
-        mapbox=dict(
-            center=dict(lat=data['lat'].mean(), lon=data['lon'].mean()),
-            zoom=12,
-        ),
-    )
+        # Use the processed data to update the map
+        # For example, you can use Plotly Express to create a scatter map
+        fig = px.scatter_mapbox(
+            lat=data['lat'],  # Update with the actual column names from your data
+            lon=data['lon'],
+            mapbox_style='open-street-map',
+        ).update_layout(
+            mapbox=dict(
+                center=dict(lat=data['lat'].mean(), lon=data['lon'].mean()),
+                zoom=12,
+            ),
+        )
 
-    return fig
+        return fig
 
 
 # Update Map Graph based on date-picker, selected data on histogram and location dropdown
