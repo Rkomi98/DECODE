@@ -542,11 +542,14 @@ def update_map(json_contents, gpkg_contents, json_filename, gpkg_filename):
         fig = px.choropleth_mapbox(
             gdf,
             geojson=gdf.geometry.__geo_interface__,
+            zoom=8, 
+            center=dict(lat=43.654514997938946, lon=10.554735408915095),
             locations=gdf.index,
             mapbox_style='carto-darkmatter',  # Use OpenStreetMap as the base map
         )
+        
 
-        fig.update_geos(fitbounds="locations", visible=False)
+        #fig.update_geos(fitbounds="locations", visible=False)
 
         return fig
 
@@ -572,8 +575,15 @@ def update_map(json_contents, gpkg_contents, json_filename, gpkg_filename):
             locations=gdf.index,
             mapbox_style='carto-darkmatter',  # Use OpenStreetMap as the base map
         )
+        fig.update_layout(
+            mapbox=dict(
+                center=dict(lat=43.654514997938946, lon=10.554735408915095),
+                zoom=8,
+            ),
+        )
 
-        fig.update_geos(fitbounds="locations", visible=False)
+
+        #fig.update_geos(fitbounds="locations", visible=False)
 
         return fig
 
