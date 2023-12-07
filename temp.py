@@ -69,6 +69,8 @@ data = {
     'lon': [10.5547, 11.0463, 10.5353],
     'name': ['Location 1', 'Location 2', 'Location 3']
 }
+
+
 # Coordinates for the polygon
 polygon_coordinates = [
     [10.554735408915095, 43.654514997938946],
@@ -523,28 +525,34 @@ def read_gpkg(contents):
 def update_map(json_contents, gpkg_contents, json_filename, gpkg_filename):
     if not json_contents and not gpkg_contents:
         # Coordinates for the polygon
-        polygon_coordinates = [
-            [10.554735408915095, 43.654514997938946],
-            [10.554735408915098, 43.654514997938946],
-            [10.645351, 43.711531],
-            [10.715524, 43.672453],
-            [10.761927, 43.644037],
-            [10.53775, 43.500318],
-            [10.439732, 43.582154],
-            [10.46497, 43.598034],
-            [10.476443, 43.654242],
-            [10.554735408915095, 43.654514997938946]
-        ]
-        polygon = shapely.geometry.Polygon(polygon_coordinates)
-        # Create a GeoDataFrame
-        gdf = gpd.GeoDataFrame(geometry=gpd.GeoSeries(polygon))
+        # Parse the GeoJSON-like data
+        # Read GeoJSON-like data from file
+        with open('EMSR705_aois.json', 'r') as file:
+            geojson_data = json.load(file)
+            
+        # Extract polygon coordinates
+        polygons = []
+        indexes = []
+        for feature in geojson_data['features']:
+            properties = feature.get('properties', {})
+            name = properties.get('name', '')
+            geometry = feature.get('geometry', {})
+            if geometry.get('type') == 'Polygon':
+                coordinates = geometry.get('coordinates', [])
+                polygons.append(coordinates)
+                indexes.append(name)
+
+        # Create a GeoDataFrame for GeoJSON-like plotting
+        gdf = gpd.GeoDataFrame(geometry=gpd.GeoSeries([Polygon(polygon[0]) for polygon in polygons]))
         # Plot polygons using GeoPandas
         fig = px.choropleth_mapbox(
             gdf,
             geojson=gdf.geometry.__geo_interface__,
-            zoom=8, 
+            zoom=10, 
             center=dict(lat=43.654514997938946, lon=10.554735408915095),
             locations=gdf.index,
+            color=indexes,  # Use the "indexes" list for coloring
+            hover_name=indexes,  # Show names on hover
             mapbox_style='carto-darkmatter',  # Use OpenStreetMap as the base map
         )
         
