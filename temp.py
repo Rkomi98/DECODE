@@ -579,14 +579,15 @@ def update_map(json_contents, gpkg_contents, json_filename, gpkg_filename):
         fig = px.choropleth_mapbox(
             gdf,
             geojson=gdf.geometry.__geo_interface__,
-            zoom=10, 
+            zoom=10,
             center=dict(lat=43.654514997938946, lon=10.554735408915095),
             locations=gdf.index,
             color=indexes,  # Use the "indexes" list for coloring
             hover_name=indexes,  # Show names on hover
             mapbox_style='carto-darkmatter',  # Use OpenStreetMap as the base map
-            #color_discrete_sequence ='viridis',  # Set the desired color scale
-            opacity = 0.4,
+            #color_continuous_scale='Viridis',  # Set the desired color scale
+            color_discrete_sequence= px.colors.sequential.Plasma_r,
+            opacity=0.4,
         )
         # Add scatter mapbox trace for building points
         fig.add_trace(
