@@ -143,7 +143,7 @@ app.layout = html.Div(
                         html.A(
                             html.Img(
                                 className="logo",
-                                src="https://github.com/Rkomi98/DECODE/blob/main/static/DECODE_logo.png?raw=true",
+                                src="https://github.com/Rkomi98/DECODE/blob/main/static/DECODE_logo_2.png?raw=true",
                             ),
                             href="https://plotly.com/dash/",
                         ),
