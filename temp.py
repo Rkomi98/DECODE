@@ -590,9 +590,12 @@ def update_map(json_contents, gpkg_contents, json_filename, gpkg_filename):
                 lat='Latitude',
                 lon='Longitude',
                 hover_data=['Floor', 'Area', 'Value'],
-                mapbox_style='open-street-map',
+                mapbox_style='carto-darkmatter',
             ).data[0]
         )
+        
+        # Set margin to 0
+        fig.update_layout(margin=dict(l=0, r=0, t=0, b=0))
         
 
         #fig.update_geos(fitbounds="locations", visible=False)
