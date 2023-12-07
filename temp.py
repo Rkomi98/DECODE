@@ -26,6 +26,8 @@ app = dash.Dash(
 app.title = "DECODE - Damage Evaluation with Comprehensive Observation Data on Earth"
 server = app.server
 
+# colorscale
+named_colorscales = px.colors.named_colorscales()
 
 # Plotly mapbox public token
 mapbox_access_token = "pk.eyJ1IjoicGxvdGx5bWFwYm94IiwiYSI6ImNrOWJqb2F4djBnMjEzbG50amg0dnJieG4ifQ.Zme1-Uzoi75IaFbieBDl3A"
@@ -580,7 +582,7 @@ def update_map(json_contents, gpkg_contents, json_filename, gpkg_filename):
             zoom=10, 
             center=dict(lat=43.654514997938946, lon=10.554735408915095),
             locations=gdf.index,
-            color=index,  # Use the "indexes" list for coloring
+            color=indexes,  # Use the "indexes" list for coloring
             hover_name=indexes,  # Show names on hover
             mapbox_style='carto-darkmatter',  # Use OpenStreetMap as the base map
             #color_discrete_sequence ='viridis',  # Set the desired color scale
