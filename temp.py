@@ -56,7 +56,7 @@ df = pd.concat([df1, df2, df3], axis=0)
 df["Date/Time"] = pd.to_datetime(df["Date/Time"], format="%Y-%m-%d %H:%M:%S")
 df.index = df["Date/Time"]
 #df.drop("Date/Time", axis = 1, inplace=True)
-totalList = []
+
 for month in df.groupby(df.index.month):
     dailyList = []
     for day in month[1].groupby(month[1].index.day):
@@ -64,6 +64,7 @@ for month in df.groupby(df.index.month):
     totalList.append(dailyList)
 #totalList = np.array(totalList)
 '''
+totalList = []
 
 ## Sample data by PM
 data = {
@@ -508,13 +509,32 @@ def getLatLonColor(selectedData, month, day):
 def read_json(contents):
     content_type, content_string = contents.split(',')
     decoded = content_string.encode('utf-8')
-    return json.safe_load(decoded)
+    return json.load(decoded)
 
 def read_gpkg(contents):
     content_type, content_string = contents.split(',')
     decoded = content_string.encode('utf-8')
     gdf = gpd.read_file(decoded, driver='GPKG')
     return gdf
+# Function to generate random building data
+def generate_building_data(num_buildings):
+    np.random.seed(42)  # For reproducibility
+    latitudes = np.random.uniform(43.5, 44, num_buildings)  # Adjust latitude range as needed
+    longitudes = np.random.uniform(10.5, 11.5, num_buildings)  # Adjust longitude range as needed
+    floors = np.random.randint(-1, 7, num_buildings)
+    areas = np.random.uniform(0, 300, num_buildings)  # Adjust area range as needed
+    values = np.random.uniform(100000, 500000, num_buildings)  # Adjust value range as needed
+
+    building_data = pd.DataFrame({
+        'Latitude': latitudes,
+        'Longitude': longitudes,
+        'Floor': floors,
+        'Area': areas,
+        'Value': values
+    })
+
+    return building_data
+
 
 @app.callback(
     Output('map_new', 'figure'),
@@ -526,6 +546,10 @@ def read_gpkg(contents):
 
 def update_map(json_contents, gpkg_contents, json_filename, gpkg_filename):
     if not json_contents and not gpkg_contents:
+        # Generate 25 building coordinates
+        num_buildings = 25
+        building_data = generate_building_data(num_buildings)
+        
         # Coordinates for the polygon
         # Parse the GeoJSON-like data
         # Read GeoJSON-like data from file
@@ -559,6 +583,16 @@ def update_map(json_contents, gpkg_contents, json_filename, gpkg_filename):
             #color_discrete_sequence ='viridis',  # Set the desired color scale
             opacity = 0.4,
         )
+        # Add scatter mapbox trace for building points
+        fig.add_trace(
+            px.scatter_mapbox(
+                building_data,
+                lat='Latitude',
+                lon='Longitude',
+                hover_data=['Floor', 'Area', 'Value'],
+                mapbox_style='open-street-map',
+            ).data[0]
+        )
         
 
         #fig.update_geos(fitbounds="locations", visible=False)
@@ -571,30 +605,32 @@ def update_map(json_contents, gpkg_contents, json_filename, gpkg_filename):
 
         # Extract polygon coordinates
         polygons = []
-        for feature in features:
+        indexes = []
+        for feature in geojson_data['features']:
+            properties = feature.get('properties', {})
+            name = properties.get('name', '')
             geometry = feature.get('geometry', {})
             if geometry.get('type') == 'Polygon':
                 coordinates = geometry.get('coordinates', [])
-                polygons.append(Polygon(coordinates[0]))
+                polygons.append(coordinates)
+                indexes.append(name)
 
         # Create a GeoDataFrame for GeoJSON-like plotting
-        gdf = gpd.GeoDataFrame(geometry=gpd.GeoSeries(polygons))
-
+        gdf = gpd.GeoDataFrame(geometry=gpd.GeoSeries([Polygon(polygon[0]) for polygon in polygons]))
         # Plot polygons using GeoPandas
         fig = px.choropleth_mapbox(
             gdf,
             geojson=gdf.geometry.__geo_interface__,
+            zoom=10, 
+            center=dict(lat=43.654514997938946, lon=10.554735408915095),
             locations=gdf.index,
+            color=indexes,  # Use the "indexes" list for coloring
+            hover_name=indexes,  # Show names on hover
             mapbox_style='carto-darkmatter',  # Use OpenStreetMap as the base map
+            #color_discrete_sequence ='viridis',  # Set the desired color scale
+            opacity = 0.4,
         )
-        fig.update_layout(
-            mapbox=dict(
-                center=dict(lat=43.654514997938946, lon=10.554735408915095),
-                zoom=8,
-            ),
-        )
-
-
+        
         #fig.update_geos(fitbounds="locations", visible=False)
 
         return fig
