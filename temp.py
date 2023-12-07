@@ -38,6 +38,7 @@ list_of_locations = {
     "Bomba d'acqua a Milano": {"lat": 45.4654219, "lon": 9.1859243},
 }
 
+'''
 # Initialize data frame
 df1 = pd.read_csv(
     "https://raw.githubusercontent.com/plotly/datasets/master/uber-rides-data1.csv",
@@ -62,6 +63,7 @@ for month in df.groupby(df.index.month):
         dailyList.append(day[1])
     totalList.append(dailyList)
 #totalList = np.array(totalList)
+'''
 
 ## Sample data by PM
 data = {
@@ -554,7 +556,8 @@ def update_map(json_contents, gpkg_contents, json_filename, gpkg_filename):
             color=indexes,  # Use the "indexes" list for coloring
             hover_name=indexes,  # Show names on hover
             mapbox_style='carto-darkmatter',  # Use OpenStreetMap as the base map
-            color_continuous_scale='Viridis',  # Set the desired color scale
+            #color_discrete_sequence ='viridis',  # Set the desired color scale
+            opacity = 0.4,
         )
         
 
