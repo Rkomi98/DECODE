@@ -554,6 +554,7 @@ def update_map(json_contents, gpkg_contents, json_filename, gpkg_filename):
             color=indexes,  # Use the "indexes" list for coloring
             hover_name=indexes,  # Show names on hover
             mapbox_style='carto-darkmatter',  # Use OpenStreetMap as the base map
+            color_continuous_scale='Viridis',  # Set the desired color scale
         )
         
 
