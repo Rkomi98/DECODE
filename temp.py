@@ -3,8 +3,10 @@ import dash
 import pandas as pd
 import numpy as np
 import plotly.express as px
+import plotly.graph_objs as go
 import geopandas as gpd
 import shapely.geometry
+
 
 from dash import html
 from dash.html.Button import Button
@@ -17,6 +19,25 @@ from plotly import graph_objs as go
 from plotly.graph_objs import *
 from datetime import datetime as dt
 from shapely.geometry import Polygon
+from shapely.geometry import Point
+
+def generate_building_data(num_buildings):
+    np.random.seed(42)  # For reproducibility
+    latitudes = np.random.uniform(43.5, 44, num_buildings)  # Adjust latitude range as needed
+    longitudes = np.random.uniform(10.5, 11.5, num_buildings)  # Adjust longitude range as needed
+    floors = np.random.randint(-1, 4, num_buildings)
+    areas = np.random.uniform(0, 300, num_buildings)  # Adjust area range as needed
+    values = np.random.uniform(100000, 500000, num_buildings)  # Adjust value range as needed
+
+    building_data = pd.DataFrame({
+        'Latitude': latitudes,
+        'Longitude': longitudes,
+        'Floor': floors,
+        'Area': areas,
+        'Value': values
+    })
+
+    return building_data
 
 
 
@@ -39,6 +60,31 @@ list_of_locations = {
     "Alluvione in Emilia Romagna": {"lat": 44.2924, "lon": 11.8762},
     "Bomba d'acqua a Milano": {"lat": 45.4654219, "lon": 9.1859243},
 }
+
+# Generate 25 building coordinates
+num_buildings = 25
+building_data = generate_building_data(num_buildings)
+
+# Coordinates for the polygon
+# Parse the GeoJSON-like data
+# Read GeoJSON-like data from file
+with open('EMSR705_aois.json', 'r') as file:
+    geojson_data = json.load(file)
+    
+# Extract polygon coordinates
+polygons = []
+indexes = []
+for feature in geojson_data['features']:
+    properties = feature.get('properties', {})
+    name = properties.get('name', '')
+    geometry = feature.get('geometry', {})
+    if geometry.get('type') == 'Polygon':
+        coordinates = geometry.get('coordinates', [])
+        polygons.append(coordinates)
+        indexes.append(name)
+
+# Create a GeoDataFrame for GeoJSON-like plotting
+gdf = gpd.GeoDataFrame(geometry=gpd.GeoSeries([Polygon(polygon[0]) for polygon in polygons]))
 
 '''
 # Initialize data frame
@@ -351,83 +397,6 @@ def get_selection(month, day, selection):
     return [np.array(xVal), np.array(yVal), np.array(colorVal)]
 
 
-# Selected Data in the Histogram updates the Values in the Hours selection dropdown menu
-@app.callback(
-    Output("bar-selector", "value"),
-    [Input("histogram", "selectedData"), Input("histogram", "clickData")],
-)
-def update_bar_selector(value, clickData):
-    holder = []
-    if clickData:
-        holder.append(str(int(clickData["points"][0]["x"])))
-    if value:
-        for x in value["points"]:
-            holder.append(str(int(x["x"])))
-    return list(set(holder))
-
-
-# Clear Selected Data if Click Data is used
-@app.callback(Output("histogram", "selectedData"), [Input("histogram", "clickData")])
-def update_selected_data(clickData):
-    if clickData:
-        return {"points": []}
-
-
-# Update the total number of rides Tag
-@app.callback(Output("total-rides", "children"), [Input("date-picker", "date")])
-def update_total_rides(datePicked):
-    date_picked = dt.strptime(datePicked, "%Y-%m-%d")
-    return "Total Number of rides: {:,d}".format(
-        len(totalList[date_picked.month - 4][date_picked.day - 1])
-    )
-
-
-# Update the total number of rides in selected times
-@app.callback(
-    [Output("total-rides-selection", "children"), Output("date-value", "children")],
-    [Input("date-picker", "date"), Input("bar-selector", "value")],
-)
-def update_total_rides_selection(datePicked, selection):
-    firstOutput = ""
-
-    if selection != None or len(selection) != 0:
-        date_picked = dt.strptime(datePicked, "%Y-%m-%d")
-        totalInSelection = 0
-        for x in selection:
-            totalInSelection += len(
-                totalList[date_picked.month - 4][date_picked.day - 1][
-                    totalList[date_picked.month - 4][date_picked.day - 1].index.hour
-                    == int(x)
-                ]
-            )
-        firstOutput = "Total rides in selection: {:,d}".format(totalInSelection)
-
-    if (
-        datePicked is None
-        or selection is None
-        or len(selection) == 24
-        or len(selection) == 0
-    ):
-        return firstOutput, (datePicked, " - showing hour(s): All")
-
-    holder = sorted([int(x) for x in selection])
-
-    if holder == list(range(min(holder), max(holder) + 1)):
-        return (
-            firstOutput,
-            (
-                datePicked,
-                " - showing hour(s): ",
-                holder[0],
-                "-",
-                holder[len(holder) - 1],
-            ),
-        )
-
-    holder_to_string = ", ".join(str(x) for x in holder)
-    return firstOutput, (datePicked, " - showing hour(s): ", holder_to_string)
-
-
 # Update Histogram Figure based on Month, Day and Times Chosen
 @app.callback(
     Output("histogram", "figure"),
@@ -521,24 +490,6 @@ def read_gpkg(contents):
     decoded = content_string.encode('utf-8')
     gdf = gpd.read_file(decoded, driver='GPKG')
     return gdf
-# Function to generate random building data
-def generate_building_data(num_buildings):
-    np.random.seed(42)  # For reproducibility
-    latitudes = np.random.uniform(43.5, 44, num_buildings)  # Adjust latitude range as needed
-    longitudes = np.random.uniform(10.5, 11.5, num_buildings)  # Adjust longitude range as needed
-    floors = np.random.randint(-1, 7, num_buildings)
-    areas = np.random.uniform(0, 300, num_buildings)  # Adjust area range as needed
-    values = np.random.uniform(100000, 500000, num_buildings)  # Adjust value range as needed
-
-    building_data = pd.DataFrame({
-        'Latitude': latitudes,
-        'Longitude': longitudes,
-        'Floor': floors,
-        'Area': areas,
-        'Value': values
-    })
-
-    return building_data
 
 
 @app.callback(
@@ -570,11 +521,28 @@ def update_map(json_contents, gpkg_contents, json_filename, gpkg_filename):
             geometry = feature.get('geometry', {})
             if geometry.get('type') == 'Polygon':
                 coordinates = geometry.get('coordinates', [])
-                polygons.append(coordinates)
+                polygons.append(Polygon(coordinates[0]))
                 indexes.append(name)
-
+        
         # Create a GeoDataFrame for GeoJSON-like plotting
-        gdf = gpd.GeoDataFrame(geometry=gpd.GeoSeries([Polygon(polygon[0]) for polygon in polygons]))
+        gdf = gpd.GeoDataFrame(geometry=gpd.GeoSeries(polygons))
+
+        # Add a new column to building_data to check if each point is inside the polygons
+        building_data['inside_polygon'] = building_data.apply(
+            lambda row: any(Point(row['Longitude'], row['Latitude']).within(polygon) for polygon in polygons),
+            axis=1
+        )
+
+        # Set the color based on the floor and inside_polygon columns
+        building_data['color'] = building_data.apply(
+            lambda row: 'white' if not row['inside_polygon'] else (
+                'green' if row['Floor'] >= 2 else (
+                    'yellow' if row['Floor'] >= 0 else 'red'
+                )
+            ),
+            axis=1
+        )
+        
         # Plot polygons using GeoPandas
         fig = px.choropleth_mapbox(
             gdf,
@@ -585,20 +553,24 @@ def update_map(json_contents, gpkg_contents, json_filename, gpkg_filename):
             color=indexes,  # Use the "indexes" list for coloring
             hover_name=indexes,  # Show names on hover
             mapbox_style='carto-darkmatter',  # Use OpenStreetMap as the base map
-            #color_continuous_scale='Viridis',  # Set the desired color scale
-            color_discrete_sequence= px.colors.sequential.Viridis_r,
+            color_discrete_sequence=px.colors.sequential.Viridis_r,
             opacity=0.4,
         )
+        
         # Add scatter mapbox trace for building points
-        fig.add_trace(
-            px.scatter_mapbox(
-                building_data,
-                lat='Latitude',
-                lon='Longitude',
-                hover_data=['Floor', 'Area', 'Value'],
-                mapbox_style='carto-darkmatter',
-            ).data[0]
+        # Plot the building points with the specified colors
+        scatter_trace = px.scatter_mapbox(
+            building_data,
+            lat='Latitude',
+            lon='Longitude',
+            hover_data=['Floor', 'Area', 'Value'],
+            mapbox_style='carto-darkmatter',
         )
+        
+        # Set the color for each point based on the 'color' column
+        scatter_trace.update_traces(marker=dict(color=building_data['color']))
+        
+        fig.add_trace(scatter_trace.data[0])
         
         # Set margin to 0
         fig.update_layout(margin=dict(l=0, r=0, t=0, b=0))
@@ -612,13 +584,14 @@ def update_map(json_contents, gpkg_contents, json_filename, gpkg_filename):
                 title="Flooded areas",
                 font=dict(
                     size=14
-                    ),
+                ),
             )
         )
 
         #fig.update_geos(fitbounds="locations", visible=False)
 
         return fig
+
 
     if json_contents:
         data = read_json(json_contents)
