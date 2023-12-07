@@ -18,8 +18,7 @@ from dash.dependencies import Input, Output
 from plotly import graph_objs as go
 from plotly.graph_objs import *
 from datetime import datetime as dt
-from shapely.geometry import Polygon
-from shapely.geometry import Point
+from shapely.geometry import Polygon, Point
 
 def generate_building_data(num_buildings):
     np.random.seed(42)  # For reproducibility
@@ -74,17 +73,34 @@ with open('EMSR705_aois.json', 'r') as file:
 # Extract polygon coordinates
 polygons = []
 indexes = []
+options = ['All']
 for feature in geojson_data['features']:
     properties = feature.get('properties', {})
     name = properties.get('name', '')
     geometry = feature.get('geometry', {})
     if geometry.get('type') == 'Polygon':
         coordinates = geometry.get('coordinates', [])
-        polygons.append(coordinates)
+        polygons.append(Polygon(coordinates[0]))
         indexes.append(name)
+        options.append(name)
 
 # Create a GeoDataFrame for GeoJSON-like plotting
-gdf = gpd.GeoDataFrame(geometry=gpd.GeoSeries([Polygon(polygon[0]) for polygon in polygons]))
+# Create a GeoDataFrame for GeoJSON-like plotting
+gdf = gpd.GeoDataFrame(geometry=gpd.GeoSeries(polygons))
+
+# Add a new column to building_data to check if each point is inside the polygons
+building_data['inside_polygon'] = building_data.apply(
+    lambda row: any(Point(row['Longitude'], row['Latitude']).within(polygon) for polygon in polygons),
+    axis=1
+)
+building_data['polygon_index'] = building_data.apply(
+    lambda row: next((index for index, polygon in zip(indexes, polygons) if Point(row['Longitude'], row['Latitude']).within(polygon)), None),
+    axis=1
+)
+
+
+# Define the colors for the building categories
+colors = {'white': 'white', 'green': 'green', 'yellow': 'yellow', 'red': 'red'}
 
 '''
 # Initialize data frame
@@ -333,7 +349,13 @@ app.layout = html.Div(
                                 "Select any of the bars on the histogram to section data by time."
                             ],
                         ),
-                        #dcc.Graph(id="histogram"),
+                        dcc.Dropdown(
+                            id="dropdown",
+                            options=options,
+                            value='All',
+                            clearable=False,
+                        ),
+                        dcc.Graph(id="histogram"),
                         # Display the uploaded data
                         
                     ],
@@ -397,42 +419,55 @@ def get_selection(month, day, selection):
     return [np.array(xVal), np.array(yVal), np.array(colorVal)]
 
 
-# Update Histogram Figure based on Month, Day and Times Chosen
+# Update Histogram Figure based on building categories
 @app.callback(
     Output("histogram", "figure"),
-    [Input("date-picker", "date"), Input("bar-selector", "value")],
-)
-def update_histogram(datePicked, selection):
-    date_picked = dt.strptime(datePicked, "%Y-%m-%d")
-    monthPicked = date_picked.month - 4
-    dayPicked = date_picked.day - 1
+    Input("dropdown", "value")
+    )
+def update_histogram(selection):
+    global building_data  # Declare building_data as a global variable
+    if selection != 'All':
+        mask = building_data["polygon_index"] == selection
+        building_data_new = building_data[mask]
+    else:
+        building_data_new = building_data
+   
+    building_data_new['color'] = building_data_new.apply(
+        lambda row: 'white' if not row['inside_polygon'] else (
+            'green' if row['Floor'] >= 2 else (
+                'yellow' if row['Floor'] >= 0 else 'red'
+            )
+        ),
+        axis=1
+    )
+    # Count the occurrences of each color category
+    color_counts = building_data_new['color'].value_counts()
 
-    [xVal, yVal, colorVal] = get_selection(monthPicked, dayPicked, selection)
+    # Extract data for the bar chart
+    xVal = list(color_counts.index)
+    yVal = color_counts.values
 
     layout = go.Layout(
         bargap=0.01,
         bargroupgap=0,
         barmode="group",
-        margin=go.layout.Margin(l=10, r=0, t=0, b=50),
+        margin=go.layout.Margin(l=10, r=10, t=0, b=0),
         showlegend=False,
         plot_bgcolor="#323130",
         paper_bgcolor="#323130",
         dragmode="select",
         font=dict(color="white"),
         xaxis=dict(
-            range=[-0.5, 23.5],
             showgrid=False,
-            nticks=25,
             fixedrange=True,
-            ticksuffix=":00",
         ),
         yaxis=dict(
-            range=[0, max(yVal) + max(yVal) / 4],
             showticklabels=False,
             showgrid=False,
             fixedrange=True,
             rangemode="nonnegative",
             zeroline=False,
+            range=[0, max(yVal) + max(yVal) / 8],  # Adjust the range for the desired height
         ),
         annotations=[
             dict(
@@ -450,16 +485,10 @@ def update_histogram(datePicked, selection):
 
     return go.Figure(
         data=[
-            go.Bar(x=xVal, y=yVal, marker=dict(color=colorVal), hoverinfo="x"),
-            go.Scatter(
-                opacity=0,
-                x=xVal,
-                y=yVal / 2,
-                hoverinfo="none",
-                mode="markers",
-                marker=dict(color="rgb(66, 134, 244, 0)", symbol="square", size=40),
-                visible=True,
-            ),
+            go.Bar(x=xVal, 
+                   y=yVal, 
+                   marker=dict(color=[colors[color] for color in xVal]), 
+                   hoverinfo="x"),
         ],
         layout=layout,
     )
