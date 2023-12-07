@@ -239,8 +239,10 @@ app.layout = html.Div(
                     children=[
                         html.Div(
                             #dcc.Graph(id="map-graph"),
+                            dcc.Graph(id="map_new"),
+                            '''
                             dcc.Graph(
-                                id='map',
+                                id='map_new',
                                 figure=px.scatter_mapbox(
                                     color_continuous_scale = [
                                         "#F4EC15",
@@ -275,6 +277,7 @@ app.layout = html.Div(
                                     mapbox_style='carto-darkmatter',  # Use OpenStreetMap as the base map
                                 ).update_layout(layout)
                             ) 
+                            '''
                         ),
                         html.Div(
                             className="text-padding",
@@ -284,7 +287,7 @@ app.layout = html.Div(
                         ),
                         #dcc.Graph(id="histogram"),
                         # Display the uploaded data
-                        dcc.Graph(id="map_new"),
+                        
                     ],
                 ),
             ],
@@ -577,7 +580,7 @@ def update_map(json_contents, gpkg_contents, json_filename, gpkg_filename):
             zoom=10, 
             center=dict(lat=43.654514997938946, lon=10.554735408915095),
             locations=gdf.index,
-            color=indexes,  # Use the "indexes" list for coloring
+            color=index,  # Use the "indexes" list for coloring
             hover_name=indexes,  # Show names on hover
             mapbox_style='carto-darkmatter',  # Use OpenStreetMap as the base map
             #color_discrete_sequence ='viridis',  # Set the desired color scale
@@ -602,7 +605,11 @@ def update_map(json_contents, gpkg_contents, json_filename, gpkg_filename):
             legend=dict(
                 bgcolor='rgba(255, 255, 255, 0.5)',  # Adjust the transparency of the background
                 x=0,  # Float the legend to the left
-                y=0,  # Float the legend to the bottom
+                y=1,  # Float the legend to the bottom
+                title="Flooded areas",
+                font=dict(
+                    size=14
+                    ),
             )
         )
 
