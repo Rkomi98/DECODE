@@ -586,7 +586,7 @@ def update_map(json_contents, gpkg_contents, json_filename, gpkg_filename):
             hover_name=indexes,  # Show names on hover
             mapbox_style='carto-darkmatter',  # Use OpenStreetMap as the base map
             #color_continuous_scale='Viridis',  # Set the desired color scale
-            color_discrete_sequence= px.colors.sequential.Plasma_r,
+            color_discrete_sequence= px.colors.sequential.Viridis,
             opacity=0.4,
         )
         # Add scatter mapbox trace for building points
