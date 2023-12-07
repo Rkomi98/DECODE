@@ -597,6 +597,14 @@ def update_map(json_contents, gpkg_contents, json_filename, gpkg_filename):
         # Set margin to 0
         fig.update_layout(margin=dict(l=0, r=0, t=0, b=0))
         
+        # Modify legend
+        fig.update_layout(
+            legend=dict(
+                bgcolor='rgba(255, 255, 255, 0.5)',  # Adjust the transparency of the background
+                x=0,  # Float the legend to the left
+                y=0,  # Float the legend to the bottom
+            )
+        )
 
         #fig.update_geos(fitbounds="locations", visible=False)
 
