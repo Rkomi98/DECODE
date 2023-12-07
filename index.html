@@ -59,5 +59,29 @@
             <div id="histogram"></div>
         </div>
     </div>
+
+    <!-- Load Dash app script -->
+    <script>
+        // Load the Dash app into the placeholder div
+        $(document).ready(function(){
+            $.getScript("temp.py", function() {
+                // Dash app loaded
+                console.log("Dash app loaded!");
+            });
+        });
+    </script>
+
+    <!--
+    <script>
+        // Load Flask dynamic content into the placeholder div
+        $(document).ready(function(){
+            $.get("/dynamic_content", function(data) {
+                // Inject dynamic content into the placeholder div
+                $("#dynamic-content").html(data);
+            });
+        });
+    </script>
+    -->
+
 </body>
 </html>

@@ -1,38 +1,46 @@
+import json
 import dash
-import dash_core_components as dcc
-import dash_html_components as html
 import pandas as pd
 import numpy as np
+import plotly.express as px
+import geopandas as gpd
+import shapely.geometry
 
+from dash import html
+from dash.html.Button import Button
+from dash import dcc
+from dash import callback
+from dash import State
+from dash.exceptions import PreventUpdate
 from dash.dependencies import Input, Output
 from plotly import graph_objs as go
 from plotly.graph_objs import *
 from datetime import datetime as dt
+from shapely.geometry import Polygon
+
+
 
 app = dash.Dash(
     __name__, meta_tags=[{"name": "viewport", "content": "width=device-width"}],
 )
-app.title = "New York Uber Rides"
+app.title = "DECODE - Damage Evaluation with Comprehensive Observation Data on Earth"
 server = app.server
 
+# colorscale
+named_colorscales = px.colors.named_colorscales()
 
 # Plotly mapbox public token
 mapbox_access_token = "pk.eyJ1IjoicGxvdGx5bWFwYm94IiwiYSI6ImNrOWJqb2F4djBnMjEzbG50amg0dnJieG4ifQ.Zme1-Uzoi75IaFbieBDl3A"
 
 
-# Dictionary of important locations in New York
+# Dictionary of flooded areas in Italy
 list_of_locations = {
-    "Madison Square Garden": {"lat": 40.7505, "lon": -73.9934},
-    "Yankee Stadium": {"lat": 40.8296, "lon": -73.9262},
-    "Empire State Building": {"lat": 40.7484, "lon": -73.9857},
-    "New York Stock Exchange": {"lat": 40.7069, "lon": -74.0113},
-    "JFK Airport": {"lat": 40.644987, "lon": -73.785607},
-    "Grand Central Station": {"lat": 40.7527, "lon": -73.9772},
-    "Times Square": {"lat": 40.7589, "lon": -73.9851},
-    "Columbia University": {"lat": 40.8075, "lon": -73.9626},
-    "United Nations HQ": {"lat": 40.7489, "lon": -73.9680},
+    "Alluvione a Prato": {"lat": 43.8777049, "lon": 11.102228},
+    "Alluvione in Emilia Romagna": {"lat": 44.2924, "lon": 11.8762},
+    "Bomba d'acqua a Milano": {"lat": 45.4654219, "lon": 9.1859243},
 }
 
+'''
 # Initialize data frame
 df1 = pd.read_csv(
     "https://raw.githubusercontent.com/plotly/datasets/master/uber-rides-data1.csv",
@@ -47,23 +55,83 @@ df3 = pd.read_csv(
     dtype=object,
 )
 df = pd.concat([df1, df2, df3], axis=0)
-df["Date/Time"] = pd.to_datetime(df["Date/Time"], format="%Y-%m-%d %H:%M")
+df["Date/Time"] = pd.to_datetime(df["Date/Time"], format="%Y-%m-%d %H:%M:%S")
 df.index = df["Date/Time"]
-df.drop("Date/Time", 1, inplace=True)
-totalList = []
+#df.drop("Date/Time", axis = 1, inplace=True)
+
 for month in df.groupby(df.index.month):
     dailyList = []
     for day in month[1].groupby(month[1].index.day):
         dailyList.append(day[1])
     totalList.append(dailyList)
-totalList = np.array(totalList)
+#totalList = np.array(totalList)
+'''
+totalList = []
 
-# Layout of Dash App
+## Sample data by PM
+data = {
+    'lat': [43.6545, 43.7597, 43.6524],
+    'lon': [10.5547, 11.0463, 10.5353],
+    'name': ['Location 1', 'Location 2', 'Location 3']
+}
+
+
+# Coordinates for the polygon
+polygon_coordinates = [
+    [10.554735408915095, 43.654514997938946],
+    [10.554735408915098, 43.654514997938946],
+    [10.645351, 43.711531],
+    [10.715524, 43.672453],
+    [10.761927, 43.644037],
+    [10.53775, 43.500318],
+    [10.439732, 43.582154],
+    [10.46497, 43.598034],
+    [10.476443, 43.654242],
+    [10.554735408915095, 43.654514997938946]
+]
+polygon = shapely.geometry.Polygon(polygon_coordinates)
+# Create a GeoDataFrame
+gdf = gpd.GeoDataFrame(geometry=gpd.GeoSeries(polygon))
+
+# OpenStreetMap layout
+layout = dict(
+    autosize=True,
+    margin=go.layout.Margin(l=0, r=0, t=0, b=0),
+    hovermode='closest',
+    mapbox=dict(
+        layers=[],
+        accesstoken='your-mapbox-access-token',  # Replace with your Mapbox access token
+        bearing=0,
+        center=dict(
+            lat=43.77109369,
+            lon=11.24879527
+        ),
+        pitch=0,
+        zoom=10
+    ),
+)
+
+#HTML
+'''
+@app.route('/')
+def home():
+    return render_template('index.html')
+
+
+external_html = "index.html"
+with open(f"{external_html}", "r") as file:
+#with open(f"{server.config['TEMPLATE_FOLDER']}/{external_html}", "r") as file:
+    external_html_content = file.read()
+
 app.layout = html.Div(
     children=[
-        # Add the stylesheet link
-        html.Link(rel="stylesheet", href="assets/style.css"),
-        html.Link(rel="stylesheet", href="assets/base.css"),
+        dcc.Markdown(external_html_content),
+    ]
+)
+'''
+
+app.layout = html.Div(
+    children=[
         
         html.Div(
             className="row",
@@ -75,11 +143,11 @@ app.layout = html.Div(
                         html.A(
                             html.Img(
                                 className="logo",
-                                src=app.get_asset_url("dash-logo-new.png"),
+                                src="https://github.com/Rkomi98/DECODE/blob/main/static/DECODE_logo.png?raw=true",
                             ),
                             href="https://plotly.com/dash/",
                         ),
-                        html.H2("DASH - UBER DATA APP"),
+                        html.H2("DECODE - Damage Evaluation with Comprehensive Observation Data on Earth"),
                         html.P(
                             """Select different days using the date picker or by selecting
                             different time frames on the histogram."""
@@ -134,6 +202,25 @@ app.layout = html.Div(
                                         )
                                     ],
                                 ),
+                                html.Div(
+                                    className="button-container",
+                                    children=[
+                                        dcc.Upload(
+                                            id='upload-json',
+                                            children=html.Button('Upload JSON File'),
+                                            multiple=False,
+                                            accept='.json',
+                                        ),
+                                        
+                                        # File upload for GPKG
+                                        dcc.Upload(
+                                            id='upload-gpkg',
+                                            children=html.Button('Upload GPKG File'),
+                                            multiple=True,
+                                            accept='.gpkg, csv, shp',  # Specify accepted file types
+                                        ),
+                                    ]
+                                )
                             ],
                         ),
                         html.P(id="total-rides"),
@@ -142,7 +229,6 @@ app.layout = html.Div(
                         dcc.Markdown(
                             """
                             Source: [FiveThirtyEight](https://github.com/fivethirtyeight/uber-tlc-foil-response/tree/master/uber-trip-data)
-
                             Links: [Source Code](https://github.com/plotly/dash-sample-apps/tree/main/apps/dash-uber-rides-demo) | [Enterprise Demo](https://plotly.com/get-demo/)
                             """
                         ),
@@ -151,15 +237,59 @@ app.layout = html.Div(
                 # Column for app graphs and plots
                 html.Div(
                     className="eight columns div-for-charts bg-grey",
+                    #className="mapboxgl-map",
                     children=[
-                        dcc.Graph(id="map-graph"),
+                        html.Div(
+                            #dcc.Graph(id="map-graph"),
+                            dcc.Graph(id="map_new"),
+                            '''
+                            dcc.Graph(
+                                id='map_new',
+                                figure=px.scatter_mapbox(
+                                    color_continuous_scale = [
+                                        "#F4EC15",
+                                        "#DAF017",
+                                        "#BBEC19",
+                                        "#9DE81B",
+                                        "#80E41D",
+                                        "#66E01F",
+                                        "#4CDC20",
+                                        "#34D822",
+                                        "#24D249",
+                                        "#25D042",
+                                        "#26CC58",
+                                        "#28C86D",
+                                        "#29C481",
+                                        "#2AC093",
+                                        "#2BBCA4",
+                                        "#2BB5B8",
+                                        "#2C99B4",
+                                        "#2D7EB0",
+                                        "#2D65AC",
+                                        "#2E4EA4",
+                                        "#2E38A4",
+                                        "#3B2FA0",
+                                        "#4E2F9C",
+                                        "#603099",
+                                    ],
+                                    data_frame=data,
+                                    lat='lat',
+                                    lon='lon',
+                                    text='name',
+                                    mapbox_style='carto-darkmatter',  # Use OpenStreetMap as the base map
+                                ).update_layout(layout)
+                            ) 
+                            '''
+                        ),
                         html.Div(
                             className="text-padding",
                             children=[
                                 "Select any of the bars on the histogram to section data by time."
                             ],
                         ),
-                        dcc.Graph(id="histogram"),
+                        #dcc.Graph(id="histogram"),
+                        # Display the uploaded data
+                        
                     ],
                 ),
             ],
@@ -381,6 +511,171 @@ def getLatLonColor(selectedData, month, day):
             listStr += "(totalList[month][day].index.hour==" + str(int(time)) + ")]"
     return eval(listStr)
 
+def read_json(contents):
+    content_type, content_string = contents.split(',')
+    decoded = content_string.encode('utf-8')
+    return json.load(decoded)
+
+def read_gpkg(contents):
+    content_type, content_string = contents.split(',')
+    decoded = content_string.encode('utf-8')
+    gdf = gpd.read_file(decoded, driver='GPKG')
+    return gdf
+# Function to generate random building data
+def generate_building_data(num_buildings):
+    np.random.seed(42)  # For reproducibility
+    latitudes = np.random.uniform(43.5, 44, num_buildings)  # Adjust latitude range as needed
+    longitudes = np.random.uniform(10.5, 11.5, num_buildings)  # Adjust longitude range as needed
+    floors = np.random.randint(-1, 7, num_buildings)
+    areas = np.random.uniform(0, 300, num_buildings)  # Adjust area range as needed
+    values = np.random.uniform(100000, 500000, num_buildings)  # Adjust value range as needed
+
+    building_data = pd.DataFrame({
+        'Latitude': latitudes,
+        'Longitude': longitudes,
+        'Floor': floors,
+        'Area': areas,
+        'Value': values
+    })
+
+    return building_data
+
+
+@app.callback(
+    Output('map_new', 'figure'),
+    [Input('upload-json', 'contents'),
+     Input('upload-gpkg', 'contents')],
+    [State('upload-json', 'filename'),
+     State('upload-gpkg', 'filename')]
+)
+
+def update_map(json_contents, gpkg_contents, json_filename, gpkg_filename):
+    if not json_contents and not gpkg_contents:
+        # Generate 25 building coordinates
+        num_buildings = 25
+        building_data = generate_building_data(num_buildings)
+        
+        # Coordinates for the polygon
+        # Parse the GeoJSON-like data
+        # Read GeoJSON-like data from file
+        with open('EMSR705_aois.json', 'r') as file:
+            geojson_data = json.load(file)
+            
+        # Extract polygon coordinates
+        polygons = []
+        indexes = []
+        for feature in geojson_data['features']:
+            properties = feature.get('properties', {})
+            name = properties.get('name', '')
+            geometry = feature.get('geometry', {})
+            if geometry.get('type') == 'Polygon':
+                coordinates = geometry.get('coordinates', [])
+                polygons.append(coordinates)
+                indexes.append(name)
+
+        # Create a GeoDataFrame for GeoJSON-like plotting
+        gdf = gpd.GeoDataFrame(geometry=gpd.GeoSeries([Polygon(polygon[0]) for polygon in polygons]))
+        # Plot polygons using GeoPandas
+        fig = px.choropleth_mapbox(
+            gdf,
+            geojson=gdf.geometry.__geo_interface__,
+            zoom=10,
+            center=dict(lat=43.654514997938946, lon=10.554735408915095),
+            locations=gdf.index,
+            color=indexes,  # Use the "indexes" list for coloring
+            hover_name=indexes,  # Show names on hover
+            mapbox_style='carto-darkmatter',  # Use OpenStreetMap as the base map
+            #color_continuous_scale='Viridis',  # Set the desired color scale
+            color_discrete_sequence= px.colors.sequential.Viridis_r,
+            opacity=0.4,
+        )
+        # Add scatter mapbox trace for building points
+        fig.add_trace(
+            px.scatter_mapbox(
+                building_data,
+                lat='Latitude',
+                lon='Longitude',
+                hover_data=['Floor', 'Area', 'Value'],
+                mapbox_style='carto-darkmatter',
+            ).data[0]
+        )
+        
+        # Set margin to 0
+        fig.update_layout(margin=dict(l=0, r=0, t=0, b=0))
+        
+        # Modify legend
+        fig.update_layout(
+            legend=dict(
+                bgcolor='rgba(255, 255, 255, 0.5)',  # Adjust the transparency of the background
+                x=0,  # Float the legend to the left
+                y=1,  # Float the legend to the bottom
+                title="Flooded areas",
+                font=dict(
+                    size=14
+                    ),
+            )
+        )
+
+        #fig.update_geos(fitbounds="locations", visible=False)
+
+        return fig
+
+    if json_contents:
+        data = read_json(json_contents)
+        features = data.get('features', [])
+
+        # Extract polygon coordinates
+        polygons = []
+        indexes = []
+        for feature in geojson_data['features']:
+            properties = feature.get('properties', {})
+            name = properties.get('name', '')
+            geometry = feature.get('geometry', {})
+            if geometry.get('type') == 'Polygon':
+                coordinates = geometry.get('coordinates', [])
+                polygons.append(coordinates)
+                indexes.append(name)
+
+        # Create a GeoDataFrame for GeoJSON-like plotting
+        gdf = gpd.GeoDataFrame(geometry=gpd.GeoSeries([Polygon(polygon[0]) for polygon in polygons]))
+        # Plot polygons using GeoPandas
+        fig = px.choropleth_mapbox(
+            gdf,
+            geojson=gdf.geometry.__geo_interface__,
+            zoom=10, 
+            center=dict(lat=43.654514997938946, lon=10.554735408915095),
+            locations=gdf.index,
+            color=indexes,  # Use the "indexes" list for coloring
+            hover_name=indexes,  # Show names on hover
+            mapbox_style='carto-darkmatter',  # Use OpenStreetMap as the base map
+            #color_discrete_sequence ='viridis',  # Set the desired color scale
+            opacity = 0.4,
+        )
+        
+        #fig.update_geos(fitbounds="locations", visible=False)
+
+        return fig
+
+    if gpkg_contents:
+        data = read_gpkg(gpkg_contents)
+        # Process the GeoPackage data as needed
+        # ...
+
+        # Use the processed data to update the map
+        # For example, you can use Plotly Express to create a scatter map
+        fig = px.scatter_mapbox(
+            lat=data['lat'],  # Update with the actual column names from your data
+            lon=data['lon'],
+            mapbox_style='open-street-map',
+        ).update_layout(
+            mapbox=dict(
+                center=dict(lat=data['lat'].mean(), lon=data['lon'].mean()),
+                zoom=12,
+            ),
+        )
+
+        return fig
+
 
 # Update Map Graph based on date-picker, selected data on histogram and location dropdown
 @app.callback(
@@ -462,7 +757,7 @@ def update_graph(datePicked, selectedData, selectedLocation):
         ],
         layout=Layout(
             autosize=True,
-            margin=go.layout.Margin(l=0, r=35, t=0, b=0),
+            margin=go.layout.Margin(l=0, r=0, t=0, b=0),
             showlegend=False,
             mapbox=dict(
                 accesstoken=mapbox_access_token,
@@ -509,4 +804,4 @@ def update_graph(datePicked, selectedData, selectedLocation):
 
 
 if __name__ == "__main__":
-    app.run_server(debug=True)
+    app.run_server(debug=False)
