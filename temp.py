@@ -140,24 +140,6 @@ data = {
     'name': ['Location 1', 'Location 2', 'Location 3']
 }
 
-
-# Coordinates for the polygon
-polygon_coordinates = [
-    [10.554735408915095, 43.654514997938946],
-    [10.554735408915098, 43.654514997938946],
-    [10.645351, 43.711531],
-    [10.715524, 43.672453],
-    [10.761927, 43.644037],
-    [10.53775, 43.500318],
-    [10.439732, 43.582154],
-    [10.46497, 43.598034],
-    [10.476443, 43.654242],
-    [10.554735408915095, 43.654514997938946]
-]
-polygon = shapely.geometry.Polygon(polygon_coordinates)
-# Create a GeoDataFrame
-gdf = gpd.GeoDataFrame(geometry=gpd.GeoSeries(polygon))
-
 # OpenStreetMap layout
 layout = dict(
     autosize=True,
@@ -176,25 +158,6 @@ layout = dict(
     ),
 )
 
-#HTML
-'''
-@app.route('/')
-def home():
-    return render_template('index.html')
-
-
-external_html = "index.html"
-with open(f"{external_html}", "r") as file:
-#with open(f"{server.config['TEMPLATE_FOLDER']}/{external_html}", "r") as file:
-    external_html_content = file.read()
-
-app.layout = html.Div(
-    children=[
-        dcc.Markdown(external_html_content),
-    ]
-)
-'''
-
 app.layout = html.Div(
     children=[
         
@@ -210,26 +173,11 @@ app.layout = html.Div(
                                 className="logo",
                                 src="https://github.com/Rkomi98/DECODE/blob/main/static/DECODE_logo_2.png?raw=true",
                             ),
-                            href="https://plotly.com/dash/",
+                            href="https://github.com/Rkomi98/DECODE",
                         ),
                         html.H2("DECODE - Damage Evaluation with Comprehensive Observation Data on Earth"),
                         html.P(
-                            """Select different days using the date picker or by selecting
-                            different time frames on the histogram."""
-                        ),
-                        html.Div(
-                            className="div-for-dropdown",
-                            children=[
-                                dcc.DatePickerSingle(
-                                    id="date-picker",
-                                    min_date_allowed=dt(2014, 4, 1),
-                                    max_date_allowed=dt(2014, 9, 30),
-                                    initial_visible_month=dt(2014, 4, 1),
-                                    date=dt(2014, 4, 1).date(),
-                                    display_format="MMMM D, YYYY",
-                                    style={"border": "0px solid black"},
-                                )
-                            ],
+                            """Select different areas""" #using the date picker or by selecting different time frames on the histogram
                         ),
                         # Change to side-by-side for mobile layout
                         html.Div(
@@ -251,24 +199,6 @@ app.layout = html.Div(
                                     ],
                                 ),
                                 html.Div(
-                                    className="div-for-dropdown",
-                                    children=[
-                                        # Dropdown to select times
-                                        dcc.Dropdown(
-                                            id="bar-selector",
-                                            options=[
-                                                {
-                                                    "label": str(n) + ":00",
-                                                    "value": str(n),
-                                                }
-                                                for n in range(24)
-                                            ],
-                                            multi=True,
-                                            placeholder="Select certain hours",
-                                        )
-                                    ],
-                                ),
-                                html.Div(
                                     className="button-container",
                                     children=[
                                         dcc.Upload(
@@ -286,18 +216,16 @@ app.layout = html.Div(
                                             accept='.gpkg, csv, shp',  # Specify accepted file types
                                         ),
                                     ]
-                                )
+                                ),
+                                html.Div(
+                                    className="button-container",
+                                    children = html.Button(id='download-button', n_clicks=0, children='Download as CSV'),
+                                ),
+                                # Add a Download component
+                                dcc.Download(id="download")
                             ],
                         ),
-                        html.P(id="total-rides"),
-                        html.P(id="total-rides-selection"),
-                        html.P(id="date-value"),
-                        dcc.Markdown(
-                            """
-                            Source: [FiveThirtyEight](https://github.com/fivethirtyeight/uber-tlc-foil-response/tree/master/uber-trip-data)
-                            Links: [Source Code](https://github.com/plotly/dash-sample-apps/tree/main/apps/dash-uber-rides-demo) | [Enterprise Demo](https://plotly.com/get-demo/)
-                            """
-                        ),
+                        
                     ],
                 ),
                 # Column for app graphs and plots
@@ -308,44 +236,6 @@ app.layout = html.Div(
                         html.Div(
                             #dcc.Graph(id="map-graph"),
                             dcc.Graph(id="map_new"),
-                            '''
-                            dcc.Graph(
-                                id='map_new',
-                                figure=px.scatter_mapbox(
-                                    color_continuous_scale = [
-                                        "#F4EC15",
-                                        "#DAF017",
-                                        "#BBEC19",
-                                        "#9DE81B",
-                                        "#80E41D",
-                                        "#66E01F",
-                                        "#4CDC20",
-                                        "#34D822",
-                                        "#24D249",
-                                        "#25D042",
-                                        "#26CC58",
-                                        "#28C86D",
-                                        "#29C481",
-                                        "#2AC093",
-                                        "#2BBCA4",
-                                        "#2BB5B8",
-                                        "#2C99B4",
-                                        "#2D7EB0",
-                                        "#2D65AC",
-                                        "#2E4EA4",
-                                        "#2E38A4",
-                                        "#3B2FA0",
-                                        "#4E2F9C",
-                                        "#603099",
-                                    ],
-                                    data_frame=data,
-                                    lat='lat',
-                                    lon='lon',
-                                    text='name',
-                                    mapbox_style='carto-darkmatter',  # Use OpenStreetMap as the base map
-                                ).update_layout(layout)
-                            ) 
-                            '''
                         ),
                         html.Div(
                             className="text-padding",
@@ -376,66 +266,22 @@ daysInMonth = [30, 31, 30, 31, 31, 30]
 # Get index for the specified month in the dataframe
 monthIndex = pd.Index(["Apr", "May", "June", "July", "Aug", "Sept"])
 
-# Get the amount of rides per hour based on the time selected
-# This also higlights the color of the histogram bars based on
-# if the hours are selected
-def get_selection(month, day, selection):
-    xVal = []
-    yVal = []
-    xSelected = []
-    colorVal = [
-        "#F4EC15",
-        "#DAF017",
-        "#BBEC19",
-        "#9DE81B",
-        "#80E41D",
-        "#66E01F",
-        "#4CDC20",
-        "#34D822",
-        "#24D249",
-        "#25D042",
-        "#26CC58",
-        "#28C86D",
-        "#29C481",
-        "#2AC093",
-        "#2BBCA4",
-        "#2BB5B8",
-        "#2C99B4",
-        "#2D7EB0",
-        "#2D65AC",
-        "#2E4EA4",
-        "#2E38A4",
-        "#3B2FA0",
-        "#4E2F9C",
-        "#603099",
-    ]
-
-    # Put selected times into a list of numbers xSelected
-    xSelected.extend([int(x) for x in selection])
-
-    for i in range(24):
-        # If bar is selected then color it white
-        if i in xSelected and len(xSelected) < 24:
-            colorVal[i] = "#FFFFFF"
-        xVal.append(i)
-        # Get the number of rides at a particular time
-        yVal.append(len(totalList[month][day][totalList[month][day].index.hour == i]))
-    return [np.array(xVal), np.array(yVal), np.array(colorVal)]
-
-
 # Update Histogram Figure based on building categories
 @app.callback(
-    Output("histogram", "figure"),
-    Input("dropdown", "value")
+    [Output("histogram", "figure"),
+     Output("download-button", "n_clicks")],
+    [Input("dropdown", "value"),
+     Input("download-button", "n_clicks")]
     )
-def update_histogram(selection):
+def update_histogram(selection, download_button_clicks):
     global building_data, colors  # Declare building_data and colors as global variables
     if selection != 'All':
         mask = building_data["polygon_index"] == selection
         building_data_new = building_data[mask]
     else:
         building_data_new = building_data
-    
+    # Increment download_button_clicks to trigger the callback
+    download_button_clicks += 1
     # Check if building_data_new is empty
     if building_data_new.empty:
         # Create an empty DataFrame for the histogram
@@ -464,12 +310,16 @@ def update_histogram(selection):
                 range=[0, 10],  # Adjust the range for the desired height
             ),
         )
-        return go.Figure(
-            data=[
-                go.Bar(x=['white','green','yellow', 'red'], 
-                       y=[0,0,0,0],),
-            ],            
-            layout=layout,
+        
+        return (
+            go.Figure(
+                data=[
+                    go.Bar(x=['white','green','yellow', 'red'], 
+                           y=[0,0,0,0],),
+                ],            
+                layout=layout,
+            ),
+            download_button_clicks,
         )
     
     else: 
@@ -528,7 +378,8 @@ def update_histogram(selection):
             ],
         )
 
-        return go.Figure(
+        return (
+            go.Figure(
             data=[
                 go.Bar(x=xVal, 
                        y=yVal, 
@@ -536,8 +387,32 @@ def update_histogram(selection):
                        hoverinfo="x"),
             ],
             layout=layout,
-        )
+        ),
+        download_button_clicks)
 
+# Callback to handle download button click and trigger download
+@app.callback(
+    Output("download", "data"),
+    Input("download-button", "n_clicks"),
+    [State("dropdown", "value")],
+    prevent_initial_call=True
+)
+def download_data(n_clicks, selection):
+    global building_data  # Assuming building_data is defined
+    if selection != 'All':
+        mask = building_data["polygon_index"] == selection
+        building_data_new = building_data[mask]
+    else:
+        building_data_new = building_data
+
+    if not building_data_new.empty:
+        # Create a CSV string from the DataFrame
+        csv_string = building_data_new.to_csv(index=False, encoding='utf-8-sig')
+        # Create a dictionary to be returned as the 'data' property of the Download component
+        return dict(content=csv_string, filename="building_data.csv")
+    else:
+        # If building_data_new is empty, return no_update
+        return dash.no_update
 
 # Get the Coordinates of the chosen months, dates and times
 def getLatLonColor(selectedData, month, day):
@@ -737,132 +612,6 @@ def update_map(selected_location, json_contents, gpkg_contents, json_filename, g
         )
 
         return fig
-
-
-# Update Map Graph based on date-picker, selected data on histogram and location dropdown
-@app.callback(
-    Output("map-graph", "figure"),
-    [
-        Input("date-picker", "date"),
-        Input("bar-selector", "value"),
-        Input("location-dropdown", "value"),
-    ],
-)
-def update_graph(datePicked, selectedData, selectedLocation):
-    zoom = 12.0
-    latInitial = 40.7272
-    lonInitial = -73.991251
-    bearing = 0
-
-    if selectedLocation:
-        zoom = 15.0
-        latInitial = list_of_locations[selectedLocation]["lat"]
-        lonInitial = list_of_locations[selectedLocation]["lon"]
-
-    date_picked = dt.strptime(datePicked, "%Y-%m-%d")
-    monthPicked = date_picked.month - 4
-    dayPicked = date_picked.day - 1
-    listCoords = getLatLonColor(selectedData, monthPicked, dayPicked)
-
-    return go.Figure(
-        data=[
-            # Data for all rides based on date and time
-            Scattermapbox(
-                lat=listCoords["Lat"],
-                lon=listCoords["Lon"],
-                mode="markers",
-                hoverinfo="lat+lon+text",
-                text=listCoords.index.hour,
-                marker=dict(
-                    showscale=True,
-                    color=np.append(np.insert(listCoords.index.hour, 0, 0), 23),
-                    opacity=0.5,
-                    size=5,
-                    colorscale=[
-                        [0, "#F4EC15"],
-                        [0.04167, "#DAF017"],
-                        [0.0833, "#BBEC19"],
-                        [0.125, "#9DE81B"],
-                        [0.1667, "#80E41D"],
-                        [0.2083, "#66E01F"],
-                        [0.25, "#4CDC20"],
-                        [0.292, "#34D822"],
-                        [0.333, "#24D249"],
-                        [0.375, "#25D042"],
-                        [0.4167, "#26CC58"],
-                        [0.4583, "#28C86D"],
-                        [0.50, "#29C481"],
-                        [0.54167, "#2AC093"],
-                        [0.5833, "#2BBCA4"],
-                        [1.0, "#613099"],
-                    ],
-                    colorbar=dict(
-                        title="Time of<br>Day",
-                        x=0.93,
-                        xpad=0,
-                        nticks=24,
-                        tickfont=dict(color="#d8d8d8"),
-                        titlefont=dict(color="#d8d8d8"),
-                        thicknessmode="pixels",
-                    ),
-                ),
-            ),
-            # Plot of important locations on the map
-            Scattermapbox(
-                lat=[list_of_locations[i]["lat"] for i in list_of_locations],
-                lon=[list_of_locations[i]["lon"] for i in list_of_locations],
-                mode="markers",
-                hoverinfo="text",
-                text=[i for i in list_of_locations],
-                marker=dict(size=8, color="#ffa0a0"),
-            ),
-        ],
-        layout=Layout(
-            autosize=True,
-            margin=go.layout.Margin(l=0, r=0, t=0, b=0),
-            showlegend=False,
-            mapbox=dict(
-                accesstoken=mapbox_access_token,
-                center=dict(lat=latInitial, lon=lonInitial),  # 40.7272  # -73.991251
-                style="dark",
-                bearing=bearing,
-                zoom=zoom,
-            ),
-            updatemenus=[
-                dict(
-                    buttons=(
-                        [
-                            dict(
-                                args=[
-                                    {
-                                        "mapbox.zoom": 12,
-                                        "mapbox.center.lon": "-73.991251",
-                                        "mapbox.center.lat": "40.7272",
-                                        "mapbox.bearing": 0,
-                                        "mapbox.style": "dark",
-                                    }
-                                ],
-                                label="Reset Zoom",
-                                method="relayout",
-                            )
-                        ]
-                    ),
-                    direction="left",
-                    pad={"r": 0, "t": 0, "b": 0, "l": 0},
-                    showactive=False,
-                    type="buttons",
-                    x=0.45,
-                    y=0.02,
-                    xanchor="left",
-                    yanchor="bottom",
-                    bgcolor="#323130",
-                    borderwidth=1,
-                    bordercolor="#6d6d6d",
-                    font=dict(color="#FFFFFF"),
-                )
-            ],
-        ),
-    )
 
 
 if __name__ == "__main__":

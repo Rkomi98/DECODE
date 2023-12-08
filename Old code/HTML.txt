@@ -1,0 +1,58 @@
+#HTML
+@app.route('/')
+def home():
+    return render_template('index.html')
+
+
+external_html = "index.html"
+with open(f"{external_html}", "r") as file:
+#with open(f"{server.config['TEMPLATE_FOLDER']}/{external_html}", "r") as file:
+    external_html_content = file.read()
+
+app.layout = html.Div(
+    children=[
+        dcc.Markdown(external_html_content),
+    ]
+)
+html.Div(
+    className="div-for-dropdown",
+    children=[
+        dcc.DatePickerSingle(
+            id="date-picker",
+            min_date_allowed=dt(2014, 4, 1),
+            max_date_allowed=dt(2014, 9, 30),
+            initial_visible_month=dt(2014, 4, 1),
+            date=dt(2014, 4, 1).date(),
+            display_format="MMMM D, YYYY",
+            style={"border": "0px solid black"},
+        )
+    ],
+),
+html.Div(
+    className="div-for-dropdown",
+    children=[
+        # Dropdown to select times
+        dcc.Dropdown(
+            id="bar-selector",
+            options=[
+                {
+                    "label": str(n) + ":00",
+                    "value": str(n),
+                }
+                for n in range(24)
+            ],
+            multi=True,
+            placeholder="Select certain hours",
+        )
+    ],
+),
+
+html.P(id="total-rides"),
+                        html.P(id="total-rides-selection"),
+                        html.P(id="date-value"),
+                        dcc.Markdown(
+                            """
+                            Source: [FiveThirtyEight](https://github.com/fivethirtyeight/uber-tlc-foil-response/tree/master/uber-trip-data)
+                            Links: [Source Code](https://github.com/plotly/dash-sample-apps/tree/main/apps/dash-uber-rides-demo) | [Enterprise Demo](https://plotly.com/get-demo/)
+                            """
+                        ),
