@@ -271,15 +271,25 @@ monthIndex = pd.Index(["Apr", "May", "June", "July", "Aug", "Sept"])
     [Output("histogram", "figure"),
      Output("download-button", "n_clicks")],
     [Input("dropdown", "value"),
-     Input("download-button", "n_clicks")]
+     Input("download-button", "n_clicks"),     
+     Input('building_data', 'children')
+     ],
     )
-def update_histogram(selection, download_button_clicks):
-    global building_data, colors  # Declare building_data and colors as global variables
-    if selection != 'All':
-        mask = building_data["polygon_index"] == selection
-        building_data_new = building_data[mask]
-    else:
+def update_histogram(selection, download_button_clicks, building_data_str):
+    global colors  # Declare building_data and colors as global variables
+    # Update the building_data variable
+    building_data = pd.read_json(building_data_str, orient='split')
+    # Print types and unique values of relevant columns
+    print("Type of 'polygon_index':", building_data["polygon_index"].dtype)
+    print("Unique values of 'polygon_index':", building_data["polygon_index"].unique())
+
+    if not selection or (len(selection) == 1 and selection[0] is None):
+        print("Empty selection")
         building_data_new = building_data
+    else:
+        print("Selection:", selection)
+        mask = building_data["polygon_index"].isin(selection)
+        building_data_new = building_data[mask]
     # Increment download_button_clicks to trigger the callback
     # Check if building_data_new is empty
     if building_data_new.empty:
@@ -445,7 +455,8 @@ def read_gpkg(contents):
 
 
 @app.callback(
-    Output('map_new', 'figure'),
+    [Output('map_new', 'figure'),
+     Output('building_data_output', 'children')],
     [Input("location-dropdown", "value"),
      Input('upload-json', 'contents'),
      Input('upload-gpkg', 'contents'),
@@ -556,8 +567,11 @@ def update_map(selected_location, json_contents, gpkg_contents, json_filename, g
         )
 
         #fig.update_geos(fitbounds="locations", visible=False)
+        # Output the building_data as a string
+        building_data_str = building_data.to_json(date_format='iso', orient='split')
 
-        return fig
+
+        return fig, building_data_str
 
 
     if json_contents:
