@@ -219,7 +219,7 @@ app.layout = html.Div(
                                 ),
                                 html.Div(
                                     className="button-container",
-                                    children = html.Button(id='download-button', n_clicks=0, children='Download as CSV'),
+                                    children = html.Button(id='download-button', n_clicks=0, children='Download CSV file'),
                                 ),
                                 # Add a Download component
                                 dcc.Download(id="download")
