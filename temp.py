@@ -281,7 +281,6 @@ def update_histogram(selection, download_button_clicks):
     else:
         building_data_new = building_data
     # Increment download_button_clicks to trigger the callback
-    download_button_clicks += 1
     # Check if building_data_new is empty
     if building_data_new.empty:
         # Create an empty DataFrame for the histogram
@@ -398,6 +397,9 @@ def update_histogram(selection, download_button_clicks):
     prevent_initial_call=True
 )
 def download_data(n_clicks, selection):
+    if n_clicks is None:
+        # If the button is not clicked, return no_update
+        return dash.no_update
     global building_data  # Assuming building_data is defined
     if selection != 'All':
         mask = building_data["polygon_index"] == selection
@@ -405,7 +407,8 @@ def download_data(n_clicks, selection):
     else:
         building_data_new = building_data
 
-    if not building_data_new.empty:
+    if (not building_data_new.empty) and (n_clicks>1):
+        print(n_clicks)
         # Create a CSV string from the DataFrame
         csv_string = building_data_new.to_csv(index=False, encoding='utf-8-sig')
         # Create a dictionary to be returned as the 'data' property of the Download component
