@@ -305,13 +305,19 @@ monthIndex = pd.Index(["Apr", "May", "June", "July", "Aug", "Sept"])
     )
 def update_histogram(selection, download_button_clicks):
     global building_data, colors  # Declare building_data and colors as global variables
-    if selection != 'All':
-        print(selection)
-        print('CIao')
-        mask = building_data["polygon_index"] == selection
-        building_data_new = building_data[mask]
-    else:
+    # Print types and unique values of relevant columns
+    print("Type of 'polygon_index':", building_data["polygon_index"].dtype)
+    print("Unique values of 'polygon_index':", building_data["polygon_index"].unique())
+
+    if not selection or (len(selection) == 1 and selection[0] is None):
+        print("Empty selection")
         building_data_new = building_data
+    else:
+        print("Selection:", selection)
+        mask = building_data["polygon_index"].isin(selection)
+        building_data_new = building_data[mask]
+        print("Filtered building_data:")
+        print(building_data_new)
     # Increment download_button_clicks to trigger the callback
     # Check if building_data_new is empty
     if building_data_new.empty:
