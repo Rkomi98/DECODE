@@ -22,8 +22,10 @@ from shapely.geometry import Polygon, Point
 
 def generate_building_data(num_buildings):
     np.random.seed(42)  # For reproducibility
-    latitudes = np.random.uniform(43.5, 44, num_buildings)  # Adjust latitude range as needed
-    longitudes = np.random.uniform(10.5, 11.5, num_buildings)  # Adjust longitude range as needed
+    #latitudes = np.random.uniform(43.5, 44, num_buildings)  # Adjust latitude range as needed
+    latitudes = np.random.uniform(44.2, 44.5, num_buildings)
+    #longitudes = np.random.uniform(10.5, 11.5, num_buildings)  # Adjust longitude range as needed
+    longitudes = np.random.uniform(11.0, 12.5, num_buildings)
     floors = np.random.randint(-1, 4, num_buildings)
     areas = np.random.uniform(0, 300, num_buildings)  # Adjust area range as needed
     values = np.random.uniform(100000, 500000, num_buildings)  # Adjust value range as needed
@@ -60,14 +62,10 @@ list_of_locations = {
     "Bomba d'acqua a Milano": {"lat": 45.4654219, "lon": 9.1859243},
 }
 
-# Generate 25 building coordinates
-num_buildings = 25
-building_data = generate_building_data(num_buildings)
-
 # Coordinates for the polygon
 # Parse the GeoJSON-like data
 # Read GeoJSON-like data from file
-with open('EMSR705_aois.json', 'r') as file:
+with open('EMSR664_aois.json', 'r') as file: #EMSR705_aois
     geojson_data = json.load(file)
     
 # Extract polygon coordinates
@@ -87,6 +85,11 @@ for feature in geojson_data['features']:
 # Create a GeoDataFrame for GeoJSON-like plotting
 # Create a GeoDataFrame for GeoJSON-like plotting
 gdf = gpd.GeoDataFrame(geometry=gpd.GeoSeries(polygons))
+
+
+# Generate 25 building coordinates
+num_buildings = 25
+building_data = generate_building_data(num_buildings)
 
 # Add a new column to building_data to check if each point is inside the polygons
 building_data['inside_polygon'] = building_data.apply(
@@ -239,9 +242,10 @@ app.layout = html.Div(
                                         dcc.Dropdown(
                                             id="location-dropdown",
                                             options=[
-                                                {"label": i, "value": i}
-                                                for i in list_of_locations
+                                                {"label": i, "value": i} for i in list_of_locations
                                             ],
+                                            value = 'None',
+                                            clearable=False,
                                             placeholder="Select a location",
                                         )
                                     ],
@@ -425,73 +429,114 @@ def get_selection(month, day, selection):
     Input("dropdown", "value")
     )
 def update_histogram(selection):
-    global building_data  # Declare building_data as a global variable
+    global building_data, colors  # Declare building_data and colors as global variables
     if selection != 'All':
         mask = building_data["polygon_index"] == selection
         building_data_new = building_data[mask]
     else:
         building_data_new = building_data
-   
-    building_data_new['color'] = building_data_new.apply(
-        lambda row: 'white' if not row['inside_polygon'] else (
-            'green' if row['Floor'] >= 2 else (
-                'yellow' if row['Floor'] >= 0 else 'red'
+    
+    # Check if building_data_new is empty
+    if building_data_new.empty:
+        # Create an empty DataFrame for the histogram
+        histogram_data = pd.DataFrame(columns=['color'])
+        layout = go.Layout(
+            title = "No Building affected",
+            bargap=0.01,
+            bargroupgap=0,
+            barmode="group",
+            margin=go.layout.Margin(l=10, r=10, t=50, b=0),
+            showlegend=False,
+            plot_bgcolor="#323130",
+            paper_bgcolor="#323130",
+            dragmode="select",
+            font=dict(color="white"),
+            xaxis=dict(
+                showgrid=False,
+                fixedrange=True,
+            ),
+            yaxis=dict(
+                showticklabels=False,
+                showgrid=False,
+                fixedrange=True,
+                rangemode="nonnegative",
+                zeroline=False,
+                range=[0, 10],  # Adjust the range for the desired height
+            ),
+        )
+        return go.Figure(
+            data=[
+                go.Bar(x=['white','green','yellow', 'red'], 
+                       y=[0,0,0,0],),
+            ],            
+            layout=layout,
+        )
+    
+    else: 
+        # Create a new DataFrame for the histogram
+        histogram_data = pd.DataFrame({
+            'color': building_data_new.apply(
+                lambda row: 'white' if not row['inside_polygon'] else (
+                    'green' if row['Floor'] >= 2 else (
+                        'yellow' if row['Floor'] >= 0 else 'red'
+                    )
+                ),
+                axis=1
             )
-        ),
-        axis=1
-    )
-    # Count the occurrences of each color category
-    color_counts = building_data_new['color'].value_counts()
+        })
 
-    # Extract data for the bar chart
-    xVal = list(color_counts.index)
-    yVal = color_counts.values
+        # Count the occurrences of each color category
+        color_counts = histogram_data['color'].value_counts()
+    
+        # Extract data for the bar chart
+        xVal = list(color_counts.index)
+        yVal = color_counts.values
+    
+        layout = go.Layout(
+            bargap=0.01,
+            bargroupgap=0,
+            barmode="group",
+            margin=go.layout.Margin(l=10, r=10, t=0, b=0),
+            showlegend=False,
+            plot_bgcolor="#323130",
+            paper_bgcolor="#323130",
+            dragmode="select",
+            font=dict(color="white"),
+            xaxis=dict(
+                showgrid=False,
+                fixedrange=True,
+            ),
+            yaxis=dict(
+                showticklabels=False,
+                showgrid=False,
+                fixedrange=True,
+                rangemode="nonnegative",
+                zeroline=False,
+                range=[0, max(yVal) + max(yVal) / 8],  # Adjust the range for the desired height
+            ),
+            annotations=[
+                dict(
+                    x=xi,
+                    y=yi,
+                    text=str(yi),
+                    xanchor="center",
+                    yanchor="bottom",
+                    showarrow=False,
+                    font=dict(color="white"),
+                )
+                for xi, yi in zip(xVal, yVal)
+            ],
+        )
 
-    layout = go.Layout(
-        bargap=0.01,
-        bargroupgap=0,
-        barmode="group",
-        margin=go.layout.Margin(l=10, r=10, t=0, b=0),
-        showlegend=False,
-        plot_bgcolor="#323130",
-        paper_bgcolor="#323130",
-        dragmode="select",
-        font=dict(color="white"),
-        xaxis=dict(
-            showgrid=False,
-            fixedrange=True,
-        ),
-        yaxis=dict(
-            showticklabels=False,
-            showgrid=False,
-            fixedrange=True,
-            rangemode="nonnegative",
-            zeroline=False,
-            range=[0, max(yVal) + max(yVal) / 8],  # Adjust the range for the desired height
-        ),
-        annotations=[
-            dict(
-                x=xi,
-                y=yi,
-                text=str(yi),
-                xanchor="center",
-                yanchor="bottom",
-                showarrow=False,
-                font=dict(color="white"),
-            )
-            for xi, yi in zip(xVal, yVal)
-        ],
-    )
-
-    return go.Figure(
-        data=[
-            go.Bar(x=xVal, 
-                   y=yVal, 
-                   marker=dict(color=[colors[color] for color in xVal]), 
-                   hoverinfo="x"),
-        ],
-        layout=layout,
-    )
+        return go.Figure(
+            data=[
+                go.Bar(x=xVal, 
+                       y=yVal, 
+                       marker=dict(color=[colors[color] for color in xVal]),  # Assuming colors is defined
+                       hoverinfo="x"),
+            ],
+            layout=layout,
+        )
 
 
 # Get the Coordinates of the chosen months, dates and times
@@ -523,13 +568,15 @@ def read_gpkg(contents):
 
 @app.callback(
     Output('map_new', 'figure'),
-    [Input('upload-json', 'contents'),
-     Input('upload-gpkg', 'contents')],
+    [Input("location-dropdown", "value"),
+     Input('upload-json', 'contents'),
+     Input('upload-gpkg', 'contents'),
+     ],
     [State('upload-json', 'filename'),
      State('upload-gpkg', 'filename')]
 )
 
-def update_map(json_contents, gpkg_contents, json_filename, gpkg_filename):
+def update_map(selected_location, json_contents, gpkg_contents, json_filename, gpkg_filename):
     if not json_contents and not gpkg_contents:
         # Generate 25 building coordinates
         num_buildings = 25
@@ -538,7 +585,7 @@ def update_map(json_contents, gpkg_contents, json_filename, gpkg_filename):
         # Coordinates for the polygon
         # Parse the GeoJSON-like data
         # Read GeoJSON-like data from file
-        with open('EMSR705_aois.json', 'r') as file:
+        with open('EMSR664_aois.json', 'r') as file: #EMSR705_aois.json
             geojson_data = json.load(file)
             
         # Extract polygon coordinates
@@ -571,13 +618,26 @@ def update_map(json_contents, gpkg_contents, json_filename, gpkg_filename):
             ),
             axis=1
         )
+        # Set default center and zoom
+        center = dict(lat=43.654514997938946, lon=10.554735408915095)
+        print(selected_location)
+    
+        if selected_location and selected_location != 'None':
+            # If a location is selected, update center and zoom based on the selected location
+            selected_location_info = list_of_locations[selected_location]
+            center = dict(lat=selected_location_info.get('lat', 0), lon=selected_location_info.get('lon', 0))
+            print(selected_location_info.get('lat', 0))
+            print(selected_location_info.get('lon', 0))
+        else:
+            print(selected_location)
+
         
         # Plot polygons using GeoPandas
         fig = px.choropleth_mapbox(
             gdf,
             geojson=gdf.geometry.__geo_interface__,
             zoom=10,
-            center=dict(lat=43.654514997938946, lon=10.554735408915095),
+            center=center,
             locations=gdf.index,
             color=indexes,  # Use the "indexes" list for coloring
             hover_name=indexes,  # Show names on hover
