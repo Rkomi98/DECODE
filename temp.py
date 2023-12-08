@@ -407,7 +407,7 @@ def download_data(n_clicks, selection):
     else:
         building_data_new = building_data
 
-    if (not building_data_new.empty) and (n_clicks>1):
+    if (not building_data_new.empty) and (n_clicks>0):
         print(n_clicks)
         # Create a CSV string from the DataFrame
         csv_string = building_data_new.to_csv(index=False, encoding='utf-8-sig')
