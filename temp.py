@@ -22,10 +22,8 @@ from shapely.geometry import Polygon, Point
 
 def generate_building_data(num_buildings):
     np.random.seed(42)  # For reproducibility
-    #latitudes = np.random.uniform(43.5, 44, num_buildings)  # Adjust latitude range as needed
-    latitudes = np.random.uniform(44.2, 44.5, num_buildings)
-    #longitudes = np.random.uniform(10.5, 11.5, num_buildings)  # Adjust longitude range as needed
-    longitudes = np.random.uniform(11.0, 12.5, num_buildings)
+    latitudes = np.random.uniform(40, 45, num_buildings)  # Adjust latitude range for all Italy
+    longitudes = np.random.uniform(10.5, 14.5, num_buildings)  # Adjust longitude range for all Italy
     floors = np.random.randint(-1, 4, num_buildings)
     areas = np.random.uniform(0, 300, num_buildings)  # Adjust area range as needed
     values = np.random.uniform(100000, 500000, num_buildings)  # Adjust value range as needed
@@ -42,10 +40,11 @@ def generate_building_data(num_buildings):
 
 
 
+
 app = dash.Dash(
     __name__, meta_tags=[{"name": "viewport", "content": "width=device-width"}],
 )
-app.title = "DECODE - Damage Evaluation with Comprehensive Observation Data on Earth"
+app.title = "Damage Evaluation with Comprehensive Observation Data on Earth"
 server = app.server
 
 # colorscale
@@ -57,15 +56,16 @@ mapbox_access_token = "pk.eyJ1IjoicGxvdGx5bWFwYm94IiwiYSI6ImNrOWJqb2F4djBnMjEzbG
 
 # Dictionary of flooded areas in Italy
 list_of_locations = {
-    "Alluvione a Prato": {"lat": 43.8777049, "lon": 11.102228},
-    "Alluvione in Emilia Romagna": {"lat": 44.2924, "lon": 11.8762},
-    "Bomba d'acqua a Milano": {"lat": 45.4654219, "lon": 9.1859243},
+    "Alluvione a Prato": {"lat": 43.8777049, "lon": 11.102228, "layer": 'EMSR705_aois.json'},
+    "Alluvione fine Aprile Emilia Romagna": {"lat": 44.2924, "lon": 11.8762, "layer": 'EMSR659_aois.json'},
+    "Alluvione inizio Maggio Emilia Romagna": {"lat": 44.2924, "lon": 11.8762, "layer": 'EMSR664_aois.json'},
+    #"Bomba d'acqua a Milano": {"lat": 45.4654219, "lon": 9.1859243},
 }
 
 # Coordinates for the polygon
 # Parse the GeoJSON-like data
 # Read GeoJSON-like data from file
-with open('EMSR664_aois.json', 'r') as file: #EMSR705_aois
+with open('EMSR705_aois.json', 'r') as file:
     geojson_data = json.load(file)
     
 # Extract polygon coordinates
@@ -88,7 +88,7 @@ gdf = gpd.GeoDataFrame(geometry=gpd.GeoSeries(polygons))
 
 
 # Generate 25 building coordinates
-num_buildings = 25
+num_buildings = 1000
 building_data = generate_building_data(num_buildings)
 
 # Add a new column to building_data to check if each point is inside the polygons
@@ -175,7 +175,7 @@ app.layout = html.Div(
                             ),
                             href="https://github.com/Rkomi98/DECODE",
                         ),
-                        html.H2("DECODE - Damage Evaluation with Comprehensive Observation Data on Earth"),
+                        html.H2("Damage Evaluation with Comprehensive Observation Data on Earth"),
                         html.P(
                             """Select different areas""" #using the date picker or by selecting different time frames on the histogram
                         ),
@@ -243,9 +243,15 @@ app.layout = html.Div(
                                 "Select any of the bars on the histogram to section data by time."
                             ],
                         ),
+                        # Add this hidden dcc.Store component to store building_data
+                        dcc.Store(
+                            id='building-data-store', 
+                            data=building_data.to_json(date_format='iso', orient='split')
+                            ),
                         dcc.Dropdown(
                             id="dropdown",
-                            options=options,
+                            options=[],
+                            multi = True,
                             value='All',
                             clearable=False,
                         ),
@@ -259,34 +265,102 @@ app.layout = html.Div(
     ]
 )
 
-# Gets the amount of days in the specified month
-# Index represents month (0 is April, 1 is May, ... etc.)
-daysInMonth = [30, 31, 30, 31, 31, 30]
+@app.callback(
+    Output("dropdown", "options"),
+    Input("location-dropdown", "value")
+)
+def update_dropdown_options(selected_location):
+    options = []
+    if selected_location is None:
+        # Return an empty list if no location is selected
+        return []
 
-# Get index for the specified month in the dataframe
-monthIndex = pd.Index(["Apr", "May", "June", "July", "Aug", "Sept"])
+    # Ensure that list_of_locations[selected_location] is not None
+    location_info = list_of_locations.get(selected_location)
+    if location_info is None:
+        return []
+
+    if selected_location is not None:
+        options = ['All']
+        with open(location_info.get('layer', 0), 'r') as file:
+            geojson_data = json.load(file)
+        for feature in geojson_data['features']:
+            properties = feature.get('properties', {})
+            name = properties.get('name', '')
+            geometry = feature.get('geometry', {})
+            if geometry.get('type') == 'Polygon':
+                options.append(name)     
+        
+    return options
+
+# Callback to handle download button click and trigger download
+@app.callback(
+    Output("download", "data"),
+    Input("download-button", "n_clicks"),
+    [State("dropdown", "value")],
+    prevent_initial_call=True
+)
+def download_data(n_clicks, selection):
+    if n_clicks is None:
+        # If the button is not clicked, return no_update
+        return dash.no_update
+    global building_data  # Assuming building_data is defined
+    if selection != 'All':
+        mask = building_data["polygon_index"] == selection
+        building_data_new = building_data[mask]
+    else:
+        building_data_new = building_data
+
+    if (not building_data_new.empty) and (n_clicks>0):
+        print(n_clicks)
+        # Create a CSV string from the DataFrame
+        csv_string = building_data_new.to_csv(index=False, encoding='utf-8-sig')
+        # Create a dictionary to be returned as the 'data' property of the Download component
+        return dict(content=csv_string, filename="building_data.csv")
+    else:
+        # If building_data_new is empty, return no_update
+        return dash.no_update
 
 # Update Histogram Figure based on building categories
 @app.callback(
     [Output("histogram", "figure"),
      Output("download-button", "n_clicks")],
     [Input("dropdown", "value"),
-     Input("download-button", "n_clicks")]
+     Input("download-button", "n_clicks"),
+     Input('building-data-store', 'data'),
+     ],
     )
-def update_histogram(selection, download_button_clicks):
+def update_histogram(selection, download_button_clicks, building_data_str):
     global building_data, colors  # Declare building_data and colors as global variables
-    if selection != 'All':
-        mask = building_data["polygon_index"] == selection
-        building_data_new = building_data[mask]
+    # Update the building_data variable
+    if building_data_str and building_data_str!='Null':
+        #print(building_data_str)
+        #print('Cosa sto vedendo')
+        building_data = pd.read_json(building_data_str, orient='split')
     else:
+        print('Se ciaooo. Non so dove sono finito')
+    # Print types and unique values of relevant columns
+    #print("Type of 'polygon_index':", building_data["polygon_index"].dtype)
+    #print("Unique values of 'polygon_index':", building_data["polygon_index"].unique())
+
+    if (not selection) or (len(selection) == 1 and selection[0] is None) or ('All' in selection):
+        print("Empty selection")
         building_data_new = building_data
+    else:
+        print("Selection:", selection)
+        mask = building_data["polygon_index"].isin(selection)
+        building_data_new = building_data[mask]
+        print("Filtered building_data:")
+        print(building_data_new)
     # Increment download_button_clicks to trigger the callback
     # Check if building_data_new is empty
     if building_data_new.empty:
         # Create an empty DataFrame for the histogram
         histogram_data = pd.DataFrame(columns=['color'])
+        print('Sono qui')
+        # If no location is selected, return an empty histogram
         layout = go.Layout(
-            title = "No Building affected",
+            title="No Building affected",
             bargap=0.01,
             bargroupgap=0,
             barmode="group",
@@ -309,20 +383,15 @@ def update_histogram(selection, download_button_clicks):
                 range=[0, 10],  # Adjust the range for the desired height
             ),
         )
-        
-        return (
-            go.Figure(
-                data=[
-                    go.Bar(x=['white','green','yellow', 'red'], 
-                           y=[0,0,0,0],),
-                ],            
-                layout=layout,
-            ),
-            download_button_clicks,
-        )
-    
-    else: 
-        # Create a new DataFrame for the histogram
+        return go.Figure(
+            data=[
+                go.Bar(x=['white', 'green', 'yellow', 'red'],
+                       y=[0, 0, 0, 0], ),
+            ],
+            layout=layout,
+        ), download_button_clicks
+
+    else:
         histogram_data = pd.DataFrame({
             'color': building_data_new.apply(
                 lambda row: 'white' if not row['inside_polygon'] else (
@@ -331,21 +400,21 @@ def update_histogram(selection, download_button_clicks):
                     )
                 ),
                 axis=1
-            )
+            ).astype('category')  # Ensure the column is of type category
         })
-
+        
         # Count the occurrences of each color category
         color_counts = histogram_data['color'].value_counts()
-    
+
         # Extract data for the bar chart
         xVal = list(color_counts.index)
         yVal = color_counts.values
-    
+
         layout = go.Layout(
             bargap=0.01,
             bargroupgap=0,
             barmode="group",
-            margin=go.layout.Margin(l=10, r=10, t=0, b=0),
+            margin=go.layout.Margin(l=50, r=50, t=0, b=0),
             showlegend=False,
             plot_bgcolor="#323130",
             paper_bgcolor="#323130",
@@ -377,45 +446,17 @@ def update_histogram(selection, download_button_clicks):
             ],
         )
 
-        return (
-            go.Figure(
+        return (go.Figure(
             data=[
-                go.Bar(x=xVal, 
-                       y=yVal, 
+                go.Bar(x=xVal,
+                       y=yVal,
                        marker=dict(color=[colors[color] for color in xVal]),  # Assuming colors is defined
                        hoverinfo="x"),
             ],
             layout=layout,
-        ),
-        download_button_clicks)
+        ), download_button_clicks)
 
-# Callback to handle download button click and trigger download
-@app.callback(
-    Output("download", "data"),
-    Input("download-button", "n_clicks"),
-    [State("dropdown", "value")],
-    prevent_initial_call=True
-)
-def download_data(n_clicks, selection):
-    if n_clicks is None:
-        # If the button is not clicked, return no_update
-        return dash.no_update
-    global building_data  # Assuming building_data is defined
-    if selection != 'All':
-        mask = building_data["polygon_index"] == selection
-        building_data_new = building_data[mask]
-    else:
-        building_data_new = building_data
 
-    if (not building_data_new.empty) and (n_clicks>0):
-        print(n_clicks)
-        # Create a CSV string from the DataFrame
-        csv_string = building_data_new.to_csv(index=False, encoding='utf-8-sig')
-        # Create a dictionary to be returned as the 'data' property of the Download component
-        return dict(content=csv_string, filename="building_data.csv")
-    else:
-        # If building_data_new is empty, return no_update
-        return dash.no_update
 
 # Get the Coordinates of the chosen months, dates and times
 def getLatLonColor(selectedData, month, day):
@@ -445,7 +486,8 @@ def read_gpkg(contents):
 
 
 @app.callback(
-    Output('map_new', 'figure'),
+    [Output('map_new', 'figure'),
+     Output('building-data-store', 'data')],
     [Input("location-dropdown", "value"),
      Input('upload-json', 'contents'),
      Input('upload-gpkg', 'contents'),
@@ -457,18 +499,32 @@ def read_gpkg(contents):
 def update_map(selected_location, json_contents, gpkg_contents, json_filename, gpkg_filename):
     if not json_contents and not gpkg_contents:
         # Generate 25 building coordinates
-        num_buildings = 25
+        num_buildings = 1000
         building_data = generate_building_data(num_buildings)
-        
-        # Coordinates for the polygon
-        # Parse the GeoJSON-like data
-        # Read GeoJSON-like data from file
-        with open('EMSR664_aois.json', 'r') as file: #EMSR705_aois.json
-            geojson_data = json.load(file)
+        # Set default center and zoom
+        center = dict(lat=43.654514997938946, lon=10.554735408915095)
+        print(selected_location)
+    
+        if selected_location and selected_location != 'None':
+            # If a location is selected, update center and zoom based on the selected location
+            selected_location_info = list_of_locations[selected_location]
+            center = dict(lat=selected_location_info.get('lat', 0), lon=selected_location_info.get('lon', 0))
+            print(selected_location_info.get('lat', 0))
+            print(selected_location_info.get('lon', 0))
+            with open(selected_location_info.get('layer', 0), 'r') as file: #EMSR705_aois.json
+                geojson_data = json.load(file)
+        else:
+            print(selected_location)        
+            # Coordinates for the polygon
+            # Parse the GeoJSON-like data
+            # Read GeoJSON-like data from file
+            with open('EMSR705_aois.json', 'r') as file: #EMSR705_aois.json
+                geojson_data = json.load(file)
             
         # Extract polygon coordinates
         polygons = []
         indexes = []
+        options = ['All']
         for feature in geojson_data['features']:
             properties = feature.get('properties', {})
             name = properties.get('name', '')
@@ -477,6 +533,7 @@ def update_map(selected_location, json_contents, gpkg_contents, json_filename, g
                 coordinates = geometry.get('coordinates', [])
                 polygons.append(Polygon(coordinates[0]))
                 indexes.append(name)
+                options.append(name)
         
         # Create a GeoDataFrame for GeoJSON-like plotting
         gdf = gpd.GeoDataFrame(geometry=gpd.GeoSeries(polygons))
@@ -484,6 +541,10 @@ def update_map(selected_location, json_contents, gpkg_contents, json_filename, g
         # Add a new column to building_data to check if each point is inside the polygons
         building_data['inside_polygon'] = building_data.apply(
             lambda row: any(Point(row['Longitude'], row['Latitude']).within(polygon) for polygon in polygons),
+            axis=1
+        )
+        building_data['polygon_index'] = building_data.apply(
+            lambda row: next((index for index, polygon in zip(indexes, polygons) if Point(row['Longitude'], row['Latitude']).within(polygon)), None),
             axis=1
         )
 
@@ -496,25 +557,13 @@ def update_map(selected_location, json_contents, gpkg_contents, json_filename, g
             ),
             axis=1
         )
-        # Set default center and zoom
-        center = dict(lat=43.654514997938946, lon=10.554735408915095)
-        print(selected_location)
-    
-        if selected_location and selected_location != 'None':
-            # If a location is selected, update center and zoom based on the selected location
-            selected_location_info = list_of_locations[selected_location]
-            center = dict(lat=selected_location_info.get('lat', 0), lon=selected_location_info.get('lon', 0))
-            print(selected_location_info.get('lat', 0))
-            print(selected_location_info.get('lon', 0))
-        else:
-            print(selected_location)
-
+        
         
         # Plot polygons using GeoPandas
         fig = px.choropleth_mapbox(
             gdf,
             geojson=gdf.geometry.__geo_interface__,
-            zoom=10,
+            zoom=9,
             center=center,
             locations=gdf.index,
             color=indexes,  # Use the "indexes" list for coloring
@@ -556,8 +605,11 @@ def update_map(selected_location, json_contents, gpkg_contents, json_filename, g
         )
 
         #fig.update_geos(fitbounds="locations", visible=False)
+        # Output the building_data as a string
+        building_data_str = building_data.to_json(date_format='iso', orient='split')
 
-        return fig
+
+        return fig, building_data_str
 
 
     if json_contents:
@@ -567,14 +619,16 @@ def update_map(selected_location, json_contents, gpkg_contents, json_filename, g
         # Extract polygon coordinates
         polygons = []
         indexes = []
+        options = ['All']
         for feature in geojson_data['features']:
             properties = feature.get('properties', {})
             name = properties.get('name', '')
             geometry = feature.get('geometry', {})
             if geometry.get('type') == 'Polygon':
                 coordinates = geometry.get('coordinates', [])
-                polygons.append(coordinates)
+                polygons.append(Polygon(coordinates[0]))
                 indexes.append(name)
+                options.append(name)
 
         # Create a GeoDataFrame for GeoJSON-like plotting
         gdf = gpd.GeoDataFrame(geometry=gpd.GeoSeries([Polygon(polygon[0]) for polygon in polygons]))
@@ -594,7 +648,7 @@ def update_map(selected_location, json_contents, gpkg_contents, json_filename, g
         
         #fig.update_geos(fitbounds="locations", visible=False)
 
-        return fig
+        return fig, data
 
     if gpkg_contents:
         data = read_gpkg(gpkg_contents)
@@ -614,7 +668,7 @@ def update_map(selected_location, json_contents, gpkg_contents, json_filename, g
             ),
         )
 
-        return fig
+        return fig, data
 
 
 if __name__ == "__main__":
