@@ -243,6 +243,11 @@ app.layout = html.Div(
                                 "Select any of the bars on the histogram to section data by time."
                             ],
                         ),
+                        # Add this hidden dcc.Store component to store building_data
+                        dcc.Store(
+                            id='building-data-store', 
+                            data=building_data.to_json(date_format='iso', orient='split')
+                            ),
                         dcc.Dropdown(
                             id="dropdown",
                             options=[],
@@ -288,12 +293,33 @@ def update_dropdown_options(selected_location):
         
     return options
 
-# Gets the amount of days in the specified month
-# Index represents month (0 is April, 1 is May, ... etc.)
-daysInMonth = [30, 31, 30, 31, 31, 30]
+# Callback to handle download button click and trigger download
+@app.callback(
+    Output("download", "data"),
+    Input("download-button", "n_clicks"),
+    [State("dropdown", "value")],
+    prevent_initial_call=True
+)
+def download_data(n_clicks, selection):
+    if n_clicks is None:
+        # If the button is not clicked, return no_update
+        return dash.no_update
+    global building_data  # Assuming building_data is defined
+    if selection != 'All':
+        mask = building_data["polygon_index"] == selection
+        building_data_new = building_data[mask]
+    else:
+        building_data_new = building_data
 
-# Get index for the specified month in the dataframe
-monthIndex = pd.Index(["Apr", "May", "June", "July", "Aug", "Sept"])
+    if (not building_data_new.empty) and (n_clicks>0):
+        print(n_clicks)
+        # Create a CSV string from the DataFrame
+        csv_string = building_data_new.to_csv(index=False, encoding='utf-8-sig')
+        # Create a dictionary to be returned as the 'data' property of the Download component
+        return dict(content=csv_string, filename="building_data.csv")
+    else:
+        # If building_data_new is empty, return no_update
+        return dash.no_update
 
 # Update Histogram Figure based on building categories
 @app.callback(
@@ -309,7 +335,7 @@ def update_histogram(selection, download_button_clicks):
     print("Type of 'polygon_index':", building_data["polygon_index"].dtype)
     print("Unique values of 'polygon_index':", building_data["polygon_index"].unique())
 
-    if not selection or (len(selection) == 1 and selection[0] is None):
+    if (not selection) or (len(selection) == 1 and selection[0] is None) or ('All' in selection):
         print("Empty selection")
         building_data_new = building_data
     else:
@@ -423,33 +449,6 @@ def update_histogram(selection, download_button_clicks):
         ), download_button_clicks)
 
 
-# Callback to handle download button click and trigger download
-@app.callback(
-    Output("download", "data"),
-    Input("download-button", "n_clicks"),
-    [State("dropdown", "value")],
-    prevent_initial_call=True
-)
-def download_data(n_clicks, selection):
-    if n_clicks is None:
-        # If the button is not clicked, return no_update
-        return dash.no_update
-    global building_data  # Assuming building_data is defined
-    if selection != 'All':
-        mask = building_data["polygon_index"] == selection
-        building_data_new = building_data[mask]
-    else:
-        building_data_new = building_data
-
-    if (not building_data_new.empty) and (n_clicks>0):
-        print(n_clicks)
-        # Create a CSV string from the DataFrame
-        csv_string = building_data_new.to_csv(index=False, encoding='utf-8-sig')
-        # Create a dictionary to be returned as the 'data' property of the Download component
-        return dict(content=csv_string, filename="building_data.csv")
-    else:
-        # If building_data_new is empty, return no_update
-        return dash.no_update
 
 # Get the Coordinates of the chosen months, dates and times
 def getLatLonColor(selectedData, month, day):
