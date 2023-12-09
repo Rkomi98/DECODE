@@ -327,13 +327,21 @@ def download_data(n_clicks, selection):
      Output("download-button", "n_clicks")],
     [Input("dropdown", "value"),
      Input("download-button", "n_clicks"),
+     Input('building-data-store', 'data'),
      ],
     )
-def update_histogram(selection, download_button_clicks):
+def update_histogram(selection, download_button_clicks, building_data_str):
     global building_data, colors  # Declare building_data and colors as global variables
+    # Update the building_data variable
+    if building_data_str and building_data_str!='Null':
+        #print(building_data_str)
+        #print('Cosa sto vedendo')
+        building_data = pd.read_json(building_data_str, orient='split')
+    else:
+        print('Se ciaooo. Non so dove sono finito')
     # Print types and unique values of relevant columns
-    print("Type of 'polygon_index':", building_data["polygon_index"].dtype)
-    print("Unique values of 'polygon_index':", building_data["polygon_index"].unique())
+    #print("Type of 'polygon_index':", building_data["polygon_index"].dtype)
+    #print("Unique values of 'polygon_index':", building_data["polygon_index"].unique())
 
     if (not selection) or (len(selection) == 1 and selection[0] is None) or ('All' in selection):
         print("Empty selection")
@@ -478,7 +486,8 @@ def read_gpkg(contents):
 
 
 @app.callback(
-    Output('map_new', 'figure'),
+    [Output('map_new', 'figure'),
+     Output('building-data-store', 'data')],
     [Input("location-dropdown", "value"),
      Input('upload-json', 'contents'),
      Input('upload-gpkg', 'contents'),
@@ -532,6 +541,10 @@ def update_map(selected_location, json_contents, gpkg_contents, json_filename, g
         # Add a new column to building_data to check if each point is inside the polygons
         building_data['inside_polygon'] = building_data.apply(
             lambda row: any(Point(row['Longitude'], row['Latitude']).within(polygon) for polygon in polygons),
+            axis=1
+        )
+        building_data['polygon_index'] = building_data.apply(
+            lambda row: next((index for index, polygon in zip(indexes, polygons) if Point(row['Longitude'], row['Latitude']).within(polygon)), None),
             axis=1
         )
 
@@ -592,8 +605,11 @@ def update_map(selected_location, json_contents, gpkg_contents, json_filename, g
         )
 
         #fig.update_geos(fitbounds="locations", visible=False)
+        # Output the building_data as a string
+        building_data_str = building_data.to_json(date_format='iso', orient='split')
 
-        return fig
+
+        return fig, building_data_str
 
 
     if json_contents:
@@ -632,7 +648,7 @@ def update_map(selected_location, json_contents, gpkg_contents, json_filename, g
         
         #fig.update_geos(fitbounds="locations", visible=False)
 
-        return fig
+        return fig, data
 
     if gpkg_contents:
         data = read_gpkg(gpkg_contents)
@@ -652,7 +668,7 @@ def update_map(selected_location, json_contents, gpkg_contents, json_filename, g
             ),
         )
 
-        return fig
+        return fig, data
 
 
 if __name__ == "__main__":
