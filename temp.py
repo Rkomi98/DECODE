@@ -414,7 +414,7 @@ def update_histogram(selection, download_button_clicks, building_data_str):
             bargap=0.01,
             bargroupgap=0,
             barmode="group",
-            margin=go.layout.Margin(l=10, r=10, t=0, b=0),
+            margin=go.layout.Margin(l=50, r=50, t=0, b=0),
             showlegend=False,
             plot_bgcolor="#323130",
             paper_bgcolor="#323130",
