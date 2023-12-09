@@ -43,3 +43,6 @@ To run DECODE locally, follow the installation instructions in the provided docu
 
 
 ![immagine](https://github.com/Rkomi98/DECODE/assets/72648197/9791e412-2e1d-4e99-b8d7-bb6edf32a712)
+
+![immagine](https://github.com/Rkomi98/DECODE/assets/72648197/ec603ff7-2a42-4419-869a-6a3f349b6e1a)
+
