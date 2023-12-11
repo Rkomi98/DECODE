@@ -312,7 +312,7 @@ def download_data(n_clicks, selection):
     if selection != None:
         print('Sono qui punto 1')
         print(selection[0])
-        mask = building_data_filtered["polygon_index"] == selection[0]
+        mask = building_data_filtered["polygon_index"].isin(selection)
         print(mask)
         building_data_new = building_data_filtered[mask]
         print(building_data_new)
