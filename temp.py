@@ -56,9 +56,9 @@ mapbox_access_token = "pk.eyJ1IjoicGxvdGx5bWFwYm94IiwiYSI6ImNrOWJqb2F4djBnMjEzbG
 
 # Dictionary of flooded areas in Italy
 list_of_locations = {
-    "Alluvione a Prato": {"lat": 43.8777049, "lon": 11.102228, "layer": 'EMSR705_aois.json'},
-    "Alluvione fine Aprile Emilia Romagna": {"lat": 44.2924, "lon": 11.8762, "layer": 'EMSR659_aois.json'},
-    "Alluvione inizio Maggio Emilia Romagna": {"lat": 44.2924, "lon": 11.8762, "layer": 'EMSR664_aois.json'},
+    "Flood in Tuscany": {"lat": 43.8777049, "lon": 11.102228, "layer": 'EMSR705_aois.json'},
+    "Flood in Emilia Romagna (end of April)": {"lat": 44.2924, "lon": 11.8762, "layer": 'EMSR659_aois.json'},
+    "Flood in Emilia Romagna (begin of May)": {"lat": 44.2924, "lon": 11.8762, "layer": 'EMSR664_aois.json'},
     #"Bomba d'acqua a Milano": {"lat": 45.4654219, "lon": 9.1859243},
 }
 
