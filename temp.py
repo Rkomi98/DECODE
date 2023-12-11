@@ -13,6 +13,7 @@ from dash.html.Button import Button
 from dash import dcc
 from dash import callback
 from dash import State
+from dash import callback_context as ctx
 from dash.exceptions import PreventUpdate
 from dash.dependencies import Input, Output
 from plotly import graph_objs as go
@@ -273,12 +274,11 @@ def update_dropdown_options(selected_location):
         # Return an empty list if no location is selected
         return []
 
-    # Ensure that list_of_locations[selected_location] is not None
-    location_info = list_of_locations.get(selected_location)
-    if location_info is None:
-        return []
-
-    if selected_location is not None:
+    else:
+        # Ensure that list_of_locations[selected_location] is not None
+        location_info = list_of_locations.get(selected_location)
+        if location_info is None:
+            return []
         options = ['All']
         with open(location_info.get('layer', 0), 'r') as file:
             geojson_data = json.load(file)
@@ -299,7 +299,7 @@ def update_dropdown_options(selected_location):
     prevent_initial_call=True
 )
 def download_data(n_clicks, selection):
-    if n_clicks is None:
+    if n_clicks is None or not ctx.triggered_id or "download-button" not in ctx.triggered_id:
         print('Sono qui punto 0')
         # If the button is not clicked, return no_update
         return dash.no_update
@@ -318,7 +318,7 @@ def download_data(n_clicks, selection):
         print('Sono qui punto 2')
         building_data_new = building_data
 
-    if (not building_data_new.empty) and (n_clicks==1):
+    if not building_data_new.empty:
         print('Sono qui punto 3')
         # Create a CSV string from the DataFrame
         csv_string = building_data_new.to_csv(index=False, encoding='utf-8-sig')
@@ -333,8 +333,7 @@ def download_data(n_clicks, selection):
 
 # Update Histogram Figure based on building categories
 @app.callback(
-    [Output("histogram", "figure"),
-     Output("download-button", "n_clicks")],
+    Output("histogram", "figure"),
     [Input("dropdown", "value"),
      Input("download-button", "n_clicks"),
      Input('building-data-store', 'data'),
@@ -363,7 +362,6 @@ def update_histogram(selection, download_button_clicks, building_data_str):
         print("Filtered building_data:")
         print(building_data_new)
         print(download_button_clicks)
-        download_button_clicks = 0
     # Increment download_button_clicks to trigger the callback
     # Check if building_data_new is empty
     if building_data_new.empty:
@@ -401,7 +399,7 @@ def update_histogram(selection, download_button_clicks, building_data_str):
                        y=[0, 0, 0, 0], ),
             ],
             layout=layout,
-        ), download_button_clicks
+        )
 
     else:
         histogram_data = pd.DataFrame({
@@ -458,7 +456,7 @@ def update_histogram(selection, download_button_clicks, building_data_str):
             ],
         )
 
-        return (go.Figure(
+        return go.Figure(
             data=[
                 go.Bar(x=xVal,
                        y=yVal,
@@ -466,7 +464,7 @@ def update_histogram(selection, download_button_clicks, building_data_str):
                        hoverinfo="x"),
             ],
             layout=layout,
-        ), download_button_clicks)
+        )
 
 
 
