@@ -293,7 +293,8 @@ def update_dropdown_options(selected_location):
 
 # Callback to handle download button click and trigger download
 @app.callback(
-    Output("download", "data"),
+    [Output("download", "data"),
+     Output("download-button", "n_clicks")],
     Input("download-button", "n_clicks"),
     State("dropdown", "value"),
     prevent_initial_call=True
@@ -322,8 +323,10 @@ def download_data(n_clicks, selection):
         print('Sono qui punto 3')
         # Create a CSV string from the DataFrame
         csv_string = building_data_new.to_csv(index=False, encoding='utf-8-sig')
+        # reset n_clicks
+        n_clicks = 0
         # Create a dictionary to be returned as the 'data' property of the Download component
-        return dict(content=csv_string, filename="building_data.csv")
+        return dict(content=csv_string, filename="building_data.csv"), n_clicks
     else:
         print('Sono qui punto 4')
         print(n_clicks)
