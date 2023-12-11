@@ -176,9 +176,7 @@ app.layout = html.Div(
                             href="https://github.com/Rkomi98/DECODE",
                         ),
                         html.H2("Damage Evaluation with Comprehensive Observation Data on Earth"),
-                        html.P(
-                            """Select different areas""" #using the date picker or by selecting different time frames on the histogram
-                        ),
+        
                         # Change to side-by-side for mobile layout
                         html.Div(
                             className="row",
