@@ -252,7 +252,7 @@ app.layout = html.Div(
                             id="dropdown",
                             options=[],
                             multi = True,
-                            value='All',
+                            #value='All',
                             clearable=False,
                         ),
                         dcc.Graph(id="histogram"),
@@ -297,27 +297,39 @@ def update_dropdown_options(selected_location):
 @app.callback(
     Output("download", "data"),
     Input("download-button", "n_clicks"),
-    [State("dropdown", "value")],
+    State("dropdown", "value"),
     prevent_initial_call=True
 )
 def download_data(n_clicks, selection):
     if n_clicks is None:
+        print('Sono qui punto 0')
         # If the button is not clicked, return no_update
         return dash.no_update
     global building_data  # Assuming building_data is defined
-    if selection != 'All':
-        mask = building_data["polygon_index"] == selection
-        building_data_new = building_data[mask]
+    # Filter building_data to include only rows where polygon_index is not None
+    building_data_filtered = building_data[building_data["polygon_index"].notnull()]
+    print(building_data_filtered)
+    if selection != None:
+        print('Sono qui punto 1')
+        print(selection[0])
+        mask = building_data_filtered["polygon_index"] == selection[0]
+        print(mask)
+        building_data_new = building_data_filtered[mask]
+        print(building_data_new)
     else:
+        print('Sono qui punto 2')
         building_data_new = building_data
 
     if (not building_data_new.empty) and (n_clicks>0):
-        print(n_clicks)
+        print('Sono qui punto 3')
         # Create a CSV string from the DataFrame
         csv_string = building_data_new.to_csv(index=False, encoding='utf-8-sig')
         # Create a dictionary to be returned as the 'data' property of the Download component
         return dict(content=csv_string, filename="building_data.csv")
     else:
+        print('Sono qui punto 4')
+        print(n_clicks)
+        print(building_data_new)
         # If building_data_new is empty, return no_update
         return dash.no_update
 
@@ -524,7 +536,7 @@ def update_map(selected_location, json_contents, gpkg_contents, json_filename, g
         # Extract polygon coordinates
         polygons = []
         indexes = []
-        options = ['All']
+        options = []
         for feature in geojson_data['features']:
             properties = feature.get('properties', {})
             name = properties.get('name', '')
