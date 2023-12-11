@@ -318,7 +318,7 @@ def download_data(n_clicks, selection):
         print('Sono qui punto 2')
         building_data_new = building_data
 
-    if (not building_data_new.empty) and (n_clicks>0):
+    if (not building_data_new.empty) and (n_clicks==1):
         print('Sono qui punto 3')
         # Create a CSV string from the DataFrame
         csv_string = building_data_new.to_csv(index=False, encoding='utf-8-sig')
@@ -362,6 +362,8 @@ def update_histogram(selection, download_button_clicks, building_data_str):
         building_data_new = building_data[mask]
         print("Filtered building_data:")
         print(building_data_new)
+        print(download_button_clicks)
+        download_button_clicks = 0
     # Increment download_button_clicks to trigger the callback
     # Check if building_data_new is empty
     if building_data_new.empty:
