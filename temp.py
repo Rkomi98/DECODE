@@ -104,7 +104,7 @@ building_data['polygon_index'] = building_data.apply(
 
 
 # Define the colors for the building categories
-colors = {'white': 'white', 'green': 'green', 'yellow': 'yellow', 'red': 'red'}
+colors = {'No Damage': 'white', 'Low Damage': 'green', 'Medium Damage': 'yellow', 'High Damage': 'red'}
 
 '''
 # Initialize data frame
@@ -340,6 +340,7 @@ def update_histogram(selection, download_button_clicks, building_data_str):
     green = 'Low Damage'
     yellow = 'Medium Damage'
     red = 'High Damage'
+    x_labels = [white, green, yellow, red]
     # Update the building_data variable
     if building_data_str and building_data_str!='Null':
         #print(building_data_str)
@@ -394,7 +395,7 @@ def update_histogram(selection, download_button_clicks, building_data_str):
         )
         return go.Figure(
             data=[
-                go.Bar(x=['white', 'green', 'yellow', 'red'],
+                go.Bar(x=x_labels,
                        y=[0, 0, 0, 0], ),
             ],
             layout=layout,
@@ -403,9 +404,9 @@ def update_histogram(selection, download_button_clicks, building_data_str):
     else:
         histogram_data = pd.DataFrame({
             'color': building_data_new.apply(
-                lambda row: 'white' if not row['inside_polygon'] else (
-                    'green' if row['Floor'] >= 2 else (
-                        'yellow' if row['Floor'] >= 0 else 'red'
+                lambda row: white if not row['inside_polygon'] else (
+                    green if row['Floor'] >= 2 else (
+                        yellow if row['Floor'] >= 0 else red
                     )
                 ),
                 axis=1
