@@ -415,7 +415,6 @@ def update_histogram(selection, download_button_clicks, building_data_str):
         
         # Count the occurrences of each color category
         color_counts = histogram_data['color'].value_counts()
-        x_label_plot = list(range(len(x_labels)))
 
         # Extract data for the bar chart
         xVal = list(color_counts.index)
@@ -459,7 +458,7 @@ def update_histogram(selection, download_button_clicks, building_data_str):
 
         return go.Figure(
             data=[
-                go.Bar(x=x_label_plot,
+                go.Bar(x=xVal,
                        y=yVal,
                        marker=dict(color=[colors[color] for color in xVal]),  # Assuming colors is defined
                        hoverinfo="x"),
