@@ -341,6 +341,10 @@ def download_data(n_clicks, selection):
     )
 def update_histogram(selection, download_button_clicks, building_data_str):
     global building_data, colors  # Declare building_data and colors as global variables
+    white = 'No Damage'
+    green = 'Low Damage'
+    yellow = 'Medium Damage'
+    red = 'High Damage'
     # Update the building_data variable
     if building_data_str and building_data_str!='Null':
         #print(building_data_str)
