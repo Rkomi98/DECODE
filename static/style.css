@@ -40,6 +40,7 @@ a {
 }
 #histogram {
   flex-grow: 1 
+  height: 28%;
 }
 #map-graph {
   flex-grow: 1 
