@@ -193,7 +193,7 @@ app.layout = html.Div(
                                             ],
                                             value = 'None',
                                             clearable=False,
-                                            placeholder="Select a location",
+                                            placeholder="Select a flood event",
                                         )
                                     ],
                                 ),
@@ -236,12 +236,6 @@ app.layout = html.Div(
                             #dcc.Graph(id="map-graph"),
                             dcc.Graph(id="map_new"),
                         ),
-                        html.Div(
-                            className="text-padding",
-                            children=[
-                                "Select any of the bars on the histogram to section data by time."
-                            ],
-                        ),
                         # Add this hidden dcc.Store component to store building_data
                         dcc.Store(
                             id='building-data-store', 
@@ -253,6 +247,7 @@ app.layout = html.Div(
                             multi = True,
                             #value='All',
                             clearable=False,
+                            placeholder="Select an area to update the histogram",
                         ),
                         dcc.Graph(id="histogram"),
                         # Display the uploaded data
