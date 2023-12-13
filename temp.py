@@ -423,7 +423,7 @@ def update_histogram(selection, download_button_clicks, building_data_str):
 
         # Extract data for the bar chart
         xVal = merged_counts.index
-        yVal = merged_counts['color'].values
+        yVal = merged_counts['color'].astype(int).values
 
         layout = go.Layout(
             bargap=0.01,
