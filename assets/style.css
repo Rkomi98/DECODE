@@ -39,7 +39,8 @@ a {
   width: 100%;
 }
 #histogram {
-  flex-grow: 1 
+  flex-grow: 1;
+  height: 30%;
 }
 #map-graph {
   flex-grow: 1 
