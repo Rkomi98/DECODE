@@ -415,10 +415,15 @@ def update_histogram(selection, download_button_clicks, building_data_str):
         
         # Count the occurrences of each color category
         color_counts = histogram_data['color'].value_counts()
+        
+        # Extract data for the bar chart
+        x_labels = [white, green, yellow, red]  # Add your desired labels
+        merged_counts = pd.DataFrame(index=x_labels).join(color_counts).fillna(0)
+
 
         # Extract data for the bar chart
-        xVal = list(color_counts.index)
-        yVal = color_counts.values
+        xVal = merged_counts.index
+        yVal = merged_counts['color'].values
 
         layout = go.Layout(
             bargap=0.01,
