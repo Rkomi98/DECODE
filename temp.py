@@ -13,6 +13,7 @@ from dash.html.Button import Button
 from dash import dcc
 from dash import callback
 from dash import State
+from dash import callback_context as ctx
 from dash.exceptions import PreventUpdate
 from dash.dependencies import Input, Output
 from plotly import graph_objs as go
@@ -103,7 +104,7 @@ building_data['polygon_index'] = building_data.apply(
 
 
 # Define the colors for the building categories
-colors = {'white': 'white', 'green': 'green', 'yellow': 'yellow', 'red': 'red'}
+colors = {'No Damage': 'white', 'Low Damage': 'green', 'Medium Damage': 'yellow', 'High Damage': 'red'}
 
 '''
 # Initialize data frame
@@ -192,7 +193,7 @@ app.layout = html.Div(
                                             ],
                                             value = 'None',
                                             clearable=False,
-                                            placeholder="Select a location",
+                                            placeholder="Select a flood event",
                                         )
                                     ],
                                 ),
@@ -235,12 +236,6 @@ app.layout = html.Div(
                             #dcc.Graph(id="map-graph"),
                             dcc.Graph(id="map_new"),
                         ),
-                        html.Div(
-                            className="text-padding",
-                            children=[
-                                "Select any of the bars on the histogram to section data by time."
-                            ],
-                        ),
                         # Add this hidden dcc.Store component to store building_data
                         dcc.Store(
                             id='building-data-store', 
@@ -252,6 +247,7 @@ app.layout = html.Div(
                             multi = True,
                             #value='All',
                             clearable=False,
+                            placeholder="Select an area to update the histogram",
                         ),
                         dcc.Graph(id="histogram"),
                         # Display the uploaded data
@@ -273,12 +269,11 @@ def update_dropdown_options(selected_location):
         # Return an empty list if no location is selected
         return []
 
-    # Ensure that list_of_locations[selected_location] is not None
-    location_info = list_of_locations.get(selected_location)
-    if location_info is None:
-        return []
-
-    if selected_location is not None:
+    else:
+        # Ensure that list_of_locations[selected_location] is not None
+        location_info = list_of_locations.get(selected_location)
+        if location_info is None:
+            return []
         options = ['All']
         with open(location_info.get('layer', 0), 'r') as file:
             geojson_data = json.load(file)
@@ -299,7 +294,7 @@ def update_dropdown_options(selected_location):
     prevent_initial_call=True
 )
 def download_data(n_clicks, selection):
-    if n_clicks is None:
+    if n_clicks is None or not ctx.triggered_id or "download-button" not in ctx.triggered_id:
         print('Sono qui punto 0')
         # If the button is not clicked, return no_update
         return dash.no_update
@@ -318,7 +313,7 @@ def download_data(n_clicks, selection):
         print('Sono qui punto 2')
         building_data_new = building_data
 
-    if (not building_data_new.empty) and (n_clicks>0):
+    if not building_data_new.empty:
         print('Sono qui punto 3')
         # Create a CSV string from the DataFrame
         csv_string = building_data_new.to_csv(index=False, encoding='utf-8-sig')
@@ -333,8 +328,7 @@ def download_data(n_clicks, selection):
 
 # Update Histogram Figure based on building categories
 @app.callback(
-    [Output("histogram", "figure"),
-     Output("download-button", "n_clicks")],
+    Output("histogram", "figure"),
     [Input("dropdown", "value"),
      Input("download-button", "n_clicks"),
      Input('building-data-store', 'data'),
@@ -342,6 +336,11 @@ def download_data(n_clicks, selection):
     )
 def update_histogram(selection, download_button_clicks, building_data_str):
     global building_data, colors  # Declare building_data and colors as global variables
+    white = 'No Damage'
+    green = 'Low Damage'
+    yellow = 'Medium Damage'
+    red = 'High Damage'
+    x_labels = [white, green, yellow, red]
     # Update the building_data variable
     if building_data_str and building_data_str!='Null':
         #print(building_data_str)
@@ -362,6 +361,7 @@ def update_histogram(selection, download_button_clicks, building_data_str):
         building_data_new = building_data[mask]
         print("Filtered building_data:")
         print(building_data_new)
+        print(download_button_clicks)
     # Increment download_button_clicks to trigger the callback
     # Check if building_data_new is empty
     if building_data_new.empty:
@@ -395,18 +395,18 @@ def update_histogram(selection, download_button_clicks, building_data_str):
         )
         return go.Figure(
             data=[
-                go.Bar(x=['white', 'green', 'yellow', 'red'],
+                go.Bar(x=x_labels,
                        y=[0, 0, 0, 0], ),
             ],
             layout=layout,
-        ), download_button_clicks
+        )
 
     else:
         histogram_data = pd.DataFrame({
             'color': building_data_new.apply(
-                lambda row: 'white' if not row['inside_polygon'] else (
-                    'green' if row['Floor'] >= 2 else (
-                        'yellow' if row['Floor'] >= 0 else 'red'
+                lambda row: white if not row['inside_polygon'] else (
+                    green if row['Floor'] >= 2 else (
+                        yellow if row['Floor'] >= 0 else red
                     )
                 ),
                 axis=1
@@ -415,10 +415,15 @@ def update_histogram(selection, download_button_clicks, building_data_str):
         
         # Count the occurrences of each color category
         color_counts = histogram_data['color'].value_counts()
+        
+        # Extract data for the bar chart
+        x_labels = [white, green, yellow, red]  # Add your desired labels
+        merged_counts = pd.DataFrame(index=x_labels).join(color_counts).fillna(0)
+
 
         # Extract data for the bar chart
-        xVal = list(color_counts.index)
-        yVal = color_counts.values
+        xVal = merged_counts.index
+        yVal = merged_counts['color'].astype(int).values
 
         layout = go.Layout(
             bargap=0.01,
@@ -456,7 +461,7 @@ def update_histogram(selection, download_button_clicks, building_data_str):
             ],
         )
 
-        return (go.Figure(
+        return go.Figure(
             data=[
                 go.Bar(x=xVal,
                        y=yVal,
@@ -464,7 +469,7 @@ def update_histogram(selection, download_button_clicks, building_data_str):
                        hoverinfo="x"),
             ],
             layout=layout,
-        ), download_button_clicks)
+        )
 
 
 
