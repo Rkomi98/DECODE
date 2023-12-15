@@ -43,7 +43,8 @@ But in the final version, it will be deleted and the user will have the possibil
 To run DECODE locally, follow the installation instructions in the provided documentation. The application requires Python and dependencies like Dash, Plotly, and Geopandas. All the requirements are in the 'Requirement.txt' file.
 
 
-![immagine](https://github.com/Rkomi98/DECODE/assets/72648197/9791e412-2e1d-4e99-b8d7-bb6edf32a712)
 
-![immagine](https://github.com/Rkomi98/DECODE/assets/72648197/ec603ff7-2a42-4419-869a-6a3f349b6e1a)
+
+https://github.com/Rkomi98/DECODE/assets/72648197/cde13bfa-9083-4434-89f5-fbe7e574e780
+
 
